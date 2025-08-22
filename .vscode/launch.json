@@ -1,0 +1,202 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "preprocess_scedreamer_dev_nuplan",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "data_processing/nuplan/preprocess_dataset_nuplan_wimage.py",
+            "console": "integratedTerminal",
+            "args": [
+                "dataset_name=nuplan",
+                "preprocess_nuplan.mode=train",
+                "preprocess_nuplan.num_workers=1",
+                "preprocess_nuplan.chunk_idx=0",
+                "preprocess_nuplan.chunk_size=75000"
+            ],
+            //"env": {"PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT": "2000"}
+        },
+        {
+            "name": "preprocess_scedreamer_dev_nuplan_3d_images_temp",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "data_processing/nuplan/preprocess_dataset_nuplan_3d_wimages_temp.py",
+            "console": "integratedTerminal",
+            "args": [
+                "dataset_name=nuplan",
+                "preprocess_nuplan.mode=train",
+                "preprocess_nuplan.num_workers=1"
+                //"preprocess_nuplan.chunk_idx=0",
+                //"preprocess_nuplan.mode=train",
+                //"preprocess_nuplan.chunk_size=75000"
+            ],
+            //"env": {"PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT": "2000"}
+        },
+        {
+            "name": "generate_samples",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "eval_latent_diffusion.py",
+            "console": "integratedTerminal",
+            "args": [
+                "train.run_name=config_nov11_1",
+                "ldm.num_l2l_blocks=3",
+                "dataset/waymo=latent_diffusion",
+                "model=autoencoder_waymo",
+                "ldm=dit_factorized",
+                "eval.mode=generate_samples",
+                "eval.visualize=True",
+                "eval.cache=True",
+                "eval.tile_num=1",
+                "train.seed=0",
+                "eval.inference_batch_size=128"
+               // "eval.return_diffusion=True"
+            ]
+        },
+        {
+            "name": "generate_samples_inpainting",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "eval_latent_diffusion.py",
+            "console": "integratedTerminal",
+            "args": [
+                "train.run_name=config_nov11_1",
+                "ldm.num_l2l_blocks=3",
+                "dataset/waymo=latent_diffusion",
+                "model=autoencoder_waymo",
+                "ldm=dit_factorized",
+                "eval.mode=inpainting",
+                "eval.visualize=True",
+                "eval.cache=True",
+                "eval.tile_num=1",
+                "train.seed=0",
+                "eval.inference_batch_size=128"
+               // "eval.return_diffusion=True"
+            ]
+        },
+        {
+            "name": "generate_samples_simu",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "eval_latent_diffusion.py",
+            "console": "integratedTerminal",
+            "args": [
+                "train.run_name=config_nov11_1",
+                "ldm.num_l2l_blocks=3",
+                "dataset/waymo=latent_diffusion",
+                "model=autoencoder_waymo",
+                "ldm=dit_factorized",
+                "eval.mode=simulation_environments",
+                "eval.visualize=True",
+                "eval.cache=True",
+                "eval.tile_num=1",
+                "train.seed=0",
+                "eval.inference_batch_size=128"
+               // "eval.return_diffusion=True"
+            ]
+        },
+        {
+            "name": "train_autoencoder_scedreamer_waymo",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "train_autoencoder_waymo.py",
+            "console": "integratedTerminal",
+            "args": [
+                "train.run_name=mar8",
+                "train.track=True",
+                "dataset/waymo=autoencoder",
+                "train=autoencoder_waymo",
+                "datamodule=autoencoder"
+            ]
+        },
+        {
+            "name": "train_autoencoder_scedreamer_nuplan",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "train_autoencoder_nuplan.py",
+            "console": "integratedTerminal",
+            "args": [
+                "train.run_name=mar15_1",
+                "train.track=True",
+                "model=autoencoder_nuplan",
+                "dataset/nuplan=autoencoder",
+                "train=autoencoder_nuplan",
+                "datamodule=autoencoder",
+                "model.lane_latent_dim=8",
+            ]
+        },
+        {
+            "name": "caching_autoencoder3d_scenariodreamer_nuplan",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "eval.py",
+            "console": "integratedTerminal",
+            "args": [
+                "dataset_name=nuplan",
+                "model_name=autoencoder3d",
+                "ae.eval.run_name=scenario_dreamer_autoencoder3d_nuplan",
+                "ae.eval.cache_latents.enable_caching=True",
+                "ae.eval.cache_latents.split_name=val",
+                "ae.datamodule.val_batch_size=1",
+            ],
+            "justMyCode": false,
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "6"
+            },
+        },
+        {
+            "name": "eval_autoencoder3d_scenariodreamer_nuplan",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "eval.py",
+            "console": "integratedTerminal",
+            "args": [
+                "dataset_name=nuplan",
+                "model_name=autoencoder3d",
+                "ae.eval.run_name=scenario_dreamer_autoencoder3d_nuplan"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICEs": "5"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "train_autoencoder3d_scenariodreamer_nuplan",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
+            "program": "train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "dataset_name=nuplan",
+                "model_name=autoencoder3d",
+                "ae.train.run_name=scenario_dreamer_autoencoder3d_nuplan_debug",
+                "ae.train.track=True"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICEs": "5"
+            },
+            "justMyCode": false
+        },
+    ]
+}

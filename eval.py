@@ -2,6 +2,7 @@ import os
 import hydra
 from omegaconf import OmegaConf
 from models.scenario_dreamer_autoencoder import ScenarioDreamerAutoEncoder
+from models.scenario_dreamer_autoencoder3d import ScenarioDreamerAutoEncoder3D
 from models.scenario_dreamer_ldm import ScenarioDreamerLDM
 from metrics import Metrics
 
@@ -51,7 +52,10 @@ def eval_ldm(cfg, cfg_ae, save_dir=None):
 
 def eval_autoencoder(cfg, save_dir=None):
     """ Evaluate the Scenario Dreamer AutoEncoder model."""
-    model = ScenarioDreamerAutoEncoder(cfg)
+    if '3d' in cfg.model_name:
+        model = ScenarioDreamerAutoEncoder3D(cfg)
+    else:
+        model = ScenarioDreamerAutoEncoder(cfg)
     model_summary = ModelSummary(max_depth=-1)
     
     # load checkpoint
@@ -74,17 +78,18 @@ def eval_autoencoder(cfg, save_dir=None):
     tester.test(model, ckpt_path=ckpt_path)
 
 
-@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config")
+@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3d")
 def main(cfg):
     # need to track whether we are evaluating a nuplan or waymo model as 
     # nuplan predicts lane types (lane/green light/red light) and waymo does not
     dataset_name = cfg.dataset_name.name
-    if cfg.model_name == 'autoencoder':
+    if 'autoencoder' in cfg.model_name:
         model_name = cfg.model_name
         cfg = cfg.ae
         # not the cleanest solution, but need to track dataset name
         OmegaConf.set_struct(cfg, False)   # unlock to allow setting dataset name
         cfg.dataset_name = dataset_name
+        cfg.model_name = model_name
         OmegaConf.set_struct(cfg, True)    # relock
     else:
         model_name = cfg.model_name
@@ -106,7 +111,7 @@ def main(cfg):
 
     print(f"Evaluating Scenario Dreamer {model_name} trained on {cfg.dataset_name} dataset.")
 
-    if model_name == 'autoencoder':
+    if 'autoencoder' in cfg.model_name:
         eval_autoencoder(cfg, save_dir)
     elif model_name == 'ldm':
         eval_ldm(cfg, cfg_ae, save_dir) 

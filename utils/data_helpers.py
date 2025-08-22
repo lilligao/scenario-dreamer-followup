@@ -253,13 +253,13 @@ def modify_agent_states(agent_states):
 
     Parameters
     ----------
-    agent_states : np.ndarray
+    agent_states : np.ndarray [x, y, vel_x, vel_y, heading, length, width, z, height]
         Float32 array of shape ``(N, D)`` where columns ``2-4`` are
         ``vx``, ``vy``, and ``yaw`` respectively.
 
     Returns
     -------
-    new_agent_states : np.ndarray
+    new_agent_states : np.ndarray [x, y, vel, cos(heading), sin(heading), length, width, z, height]
         Array with the *same* shape ``(N, D)`` where columns ``2-4``
         have been replaced by ``speed``, ``cosθ``, ``sinθ``.
     """
@@ -315,6 +315,57 @@ def normalize_scene(
     return agent_states, road_points
 
 
+def normalize_scene_3d(
+        agent_states: np.ndarray,
+        road_points: np.ndarray,
+        fov: float,
+        min_speed: float,
+        max_speed: float,
+        min_length: float,
+        max_length: float,
+        min_width: float,
+        max_width: float,
+        min_lane_x: float,
+        max_lane_x: float,
+        min_lane_y: float,
+        max_lane_y: float,
+        min_height: float,
+        max_height: float,
+        fov_z: float
+    ) -> Tuple[np.ndarray, np.ndarray]:
+    """Min-max normalise agent and lane features into **[-1, 1]**."""
+    # state format: [x, y, vel, cos(heading), sin(heading), length, width, z, height]
+    # pos_x
+    agent_states[:, 0] = 2 * ((agent_states[:, 0] - (-1 * fov/2))
+                            / fov) - 1
+    # pos_y
+    agent_states[:, 1] = 2 * ((agent_states[:, 1] - (-1 * fov/2))
+                            / fov) - 1
+    # pos_z
+    agent_states[:, 7] = 2 * ((agent_states[:, 7] - (-1 * fov_z/2))
+                            / fov_z) - 1
+    # speed
+    agent_states[:, 2] = 2 * ((agent_states[:, 2] - (min_speed))
+                            / (max_speed - min_speed)) - 1
+    # length
+    agent_states[:, 5] = 2 * ((agent_states[:, 5] - (min_length))
+                            / (max_length - min_length)) - 1
+    # width
+    agent_states[:, 6] = 2 * ((agent_states[:, 6] - (min_width))
+                            / (max_width - min_width)) - 1
+    # height
+    agent_states[:, 8] = 2 * ((agent_states[:, 8] - (min_height))
+                            / (max_height - min_height)) - 1
+
+    # road pos_x
+    road_points[:, :, 0] = 2 * ((road_points[:, :, 0] - (min_lane_x))
+                            / (max_lane_x - min_lane_x)) - 1
+    road_points[:, :, 1] = 2 * ((road_points[:, :, 1] - (min_lane_y))
+                            / (max_lane_y - min_lane_y)) - 1
+
+    return agent_states, road_points
+
+
 def unnormalize_scene(
         agent_states: np.ndarray,
         road_points: np.ndarray,
@@ -345,6 +396,56 @@ def unnormalize_scene(
     agent_states[:, 5] = ((torch.clip(agent_states[:, 5], -1, 1) + 1) / 2) * (max_length - min_length) + min_length
     # width
     agent_states[:, 6] = ((torch.clip(agent_states[:, 6], -1, 1) + 1) / 2) * (max_width - min_width) + min_width
+
+    lower_clip = -1000
+    upper_clip = 1000
+    
+    # lane pos_x
+    road_points[:, :, 0] = ((torch.clip(road_points[:, :, 0], lower_clip, upper_clip) + 1) / 2) * (max_lane_x - min_lane_x) + min_lane_x
+    # lane pos_y
+    road_points[:, :, 1] = ((torch.clip(road_points[:, :, 1], lower_clip, upper_clip) + 1) / 2) * (max_lane_y - min_lane_y) + min_lane_y
+
+    return agent_states, road_points
+
+
+def unnormalize_scene_3d(
+        agent_states: np.ndarray,
+        road_points: np.ndarray,
+        fov: float,
+        min_speed: float,
+        max_speed: float,
+        min_length: float,
+        max_length: float,
+        min_width: float,
+        max_width: float,
+        min_lane_x: float,
+        max_lane_x: float,
+        min_lane_y: float,
+        max_lane_y: float,
+        min_height: float,
+        max_height: float,
+        fov_z: float
+    ) -> Tuple[np.ndarray, np.ndarray]:
+    """ Unnormalize the agent states and lane points from a range of [-1, 1] to their original scale based on the dataset configuration."""
+    # agent_state format: [x, y, z, vel, cos(heading), sin(heading), length, width, height]
+    # pos_x
+    agent_states[:, 0] = ((torch.clip(agent_states[:, 0], -1, 1) + 1) / 2) * fov + (-1 * fov/2)
+    # pos_y
+    agent_states[:, 1] = ((torch.clip(agent_states[:, 1], -1, 1) + 1) / 2) * fov + (-1 * fov/2)
+    # pos_z
+    agent_states[:, 2] = ((torch.clip(agent_states[:, 2], -1, 1) + 1) / 2) * fov_z + (-1 * fov_z/2)
+    # speed
+    agent_states[:, 3] = ((torch.clip(agent_states[:, 3], -1, 1) + 1) / 2) * (max_speed - min_speed) + min_speed
+    # cos_theta
+    agent_states[:, 4] = torch.clip(agent_states[:, 4], -1, 1)
+    # sin_theta
+    agent_states[:, 5] = torch.clip(agent_states[:, 5], -1, 1)
+    # length
+    agent_states[:, 6] = ((torch.clip(agent_states[:, 6], -1, 1) + 1) / 2) * (max_length - min_length) + min_length
+    # width
+    agent_states[:, 7] = ((torch.clip(agent_states[:, 7], -1, 1) + 1) / 2) * (max_width - min_width) + min_width
+    # height
+    agent_states[:, 8] = ((torch.clip(agent_states[:, 8], -1, 1) + 1) / 2) * (max_height - min_height) + min_height
 
     lower_clip = -1000
     upper_clip = 1000

@@ -1,0 +1,12 @@
+defaults:
+- nuplan_base
+
+sledge_raw_dataset_path: ${dataset_root}/scenario_dreamer_nuplan_with_all_temp_8cam/sledge_raw # we use the same processed nuplan dataset as SLEDGE
+map_id_dataset_path: ${dataset_root}/scenario_dreamer_nuplan_with_all_temp_8cam/map_id # we use the same processed nuplan dataset as SLEDGE
+preprocess: True # get data from preprocessed files if True, otherwise write preprocessed data to disk (you can only train with preprocess=True).
+preprocess_dir: ${dataset_root}/scenario_dreamer_ae_preprocess_nuplan_3d_8cam_temp_wego # directory to save preprocessed data
+remove_left_right_connections: True # we only process the pre/succ connections. This cannot be toggled.
+nuplan_data_root: /data_nuplan/nuplan/dataset/nuplan-v1.1
+load_images: False
+debug_vis: False
+debug_vis_dir: ${project_root}/vis/try_lili_2

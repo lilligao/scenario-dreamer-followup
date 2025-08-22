@@ -3,12 +3,11 @@ import random
 from tqdm import tqdm
 import sys
 sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
-from datasets.nuplan.dataset_autoencoder_nuplan import NuplanDatasetAutoEncoder
 from cfgs.config import CONFIG_PATH
 import multiprocessing as mp
 from pathlib import Path
 from omegaconf import OmegaConf
-
+from datasets.nuplan.dataset_autoencoder3d_nuplan import NuplanDatasetAutoEncoder3D
 # ───────────────────────────────────────────────────────────
 #  helper so the Pool can pickle it
 # ───────────────────────────────────────────────────────────
@@ -26,7 +25,7 @@ def _run_one_cfg(cfg):
 
     cfg.dataset_root = cfg.scratch_root
     cfg.ae.dataset.preprocess = False
-    dset = NuplanDatasetAutoEncoder(cfg.ae.dataset, split_name=cfg.preprocess_nuplan.mode)
+    dset = NuplanDatasetAutoEncoder3D(cfg.ae.dataset, split_name=cfg.preprocess_nuplan.mode)
 
     start = cfg.preprocess_nuplan.chunk_idx * cfg.preprocess_nuplan.chunk_size
     end   = start + cfg.preprocess_nuplan.chunk_size
@@ -38,7 +37,7 @@ def _run_one_cfg(cfg):
         dset.get(idx)
 
 
-@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config")
+@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3d")
 def main(cfg):
 
     # case 1 — behave exactly like before (single-chunk run)

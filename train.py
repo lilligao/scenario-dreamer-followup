@@ -1,6 +1,7 @@
 import os 
 import hydra
 from models.scenario_dreamer_autoencoder import ScenarioDreamerAutoEncoder
+from models.scenario_dreamer_autoencoder3d import ScenarioDreamerAutoEncoder3D
 from models.scenario_dreamer_ldm import ScenarioDreamerLDM
 
 import torch
@@ -85,7 +86,10 @@ def train_autoencoder(cfg, save_dir=None):
     """ Train the Scenario Dreamer AutoEncoder model."""
     datamodule = instantiate(cfg.datamodule, dataset_cfg=cfg.dataset)
 
-    model = ScenarioDreamerAutoEncoder(cfg)
+    if '3d' in cfg.model_name:
+        model = ScenarioDreamerAutoEncoder3D(cfg)
+    else:
+        model = ScenarioDreamerAutoEncoder(cfg)
     # we always track the last epoch checkpoint for evaluation or resume training.   
     model_checkpoint = ModelCheckpoint(filename='model', save_last=True, save_top_k=0, dirpath=save_dir)
     
@@ -132,17 +136,18 @@ def train_autoencoder(cfg, save_dir=None):
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
 
 
-@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config")
+@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3d")
 def main(cfg):
     # need to track whether we are training a nuplan or waymo model as 
     # nuplan predicts lane types (lane/green light/red light) and waymo does not
     dataset_name = cfg.dataset_name.name
-    if cfg.model_name == 'autoencoder':
+    if 'autoencoder' in cfg.model_name:
         model_name = cfg.model_name
         cfg = cfg.ae
         # not the cleanest solution, but need to track dataset name
         OmegaConf.set_struct(cfg, False)   # unlock to allow setting dataset name
         cfg.dataset_name = dataset_name
+        cfg.model_name = model_name
         OmegaConf.set_struct(cfg, True)    # relock
     else:
         model_name = cfg.model_name
@@ -162,7 +167,7 @@ def main(cfg):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
     
-    if model_name == 'autoencoder':
+    if 'autoencoder' in model_name:
         train_autoencoder(cfg, save_dir)
     elif model_name == 'ldm':
         train_ldm(cfg, cfg_ae, save_dir) 

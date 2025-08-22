@@ -3,12 +3,11 @@ import random
 from tqdm import tqdm
 import sys
 sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
-from datasets.nuplan.dataset_autoencoder_nuplan import NuplanDatasetAutoEncoder
+from datasets.nuplan.dataset_autoencoder_nuplan_wimage import NuplanDatasetAutoEncoder
 from cfgs.config import CONFIG_PATH
 import multiprocessing as mp
 from pathlib import Path
 from omegaconf import OmegaConf
-
 # ───────────────────────────────────────────────────────────
 #  helper so the Pool can pickle it
 # ───────────────────────────────────────────────────────────

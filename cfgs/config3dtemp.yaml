@@ -39,11 +39,11 @@ model_name: autoencoder # or ldm
 # e.g. `python train.py dataset_name=waymo model_name=autoencoder`
 defaults:
   - dataset_name: nuplan 
-  - dataset@ae.dataset:    ${dataset_name}_autoencoder
-  - train@ae.train:      ${dataset_name}_autoencoder
-  - eval@ae.eval:       ${dataset_name}_autoencoder
-  - model@ae.model:      ${dataset_name}_autoencoder
-  - datamodule@ae.datamodule: ${dataset_name}_autoencoder
+  - dataset@ae.dataset:    ${dataset_name}_autoencoder3dtemp
+  - train@ae.train:      ${dataset_name}_autoencoder3d
+  - eval@ae.eval:       ${dataset_name}_autoencoder3dtemp
+  - model@ae.model:      ${dataset_name}_autoencoder3d
+  - datamodule@ae.datamodule: ${dataset_name}_autoencoder3dtemp
   - dataset@ldm.dataset:    ${dataset_name}_ldm
   - train@ldm.train:      ${dataset_name}_ldm
   - eval@ldm.eval:       ${dataset_name}_ldm
