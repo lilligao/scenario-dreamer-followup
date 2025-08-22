@@ -3,7 +3,7 @@ import pickle
 from utils.train_helpers import create_lambda_lr_cosine, create_lambda_lr_linear
 from datasets.waymo.dataset_autoencoder_waymo import WaymoDatasetAutoEncoder
 from datasets.nuplan.dataset_autoencoder_nuplan import NuplanDatasetAutoEncoder
-from datasets.nuplan.dataset_autoencoder3d_nuplan import NuplanDatasetAutoEncoder3D
+from datasets.nuplan.dataset_autoencoder3d_nuplan_wimages_temp import NuplanDatasetAutoEncoder3DTemp
 from nn_modules.autoencoder import AutoEncoder
 from torch_geometric.loader import DataLoader
 
@@ -49,7 +49,7 @@ class ScenarioDreamerAutoEncoder3D(pl.LightningModule):
             if self.cfg.dataset_name == 'waymo':
                 test_dataset = WaymoDatasetAutoEncoder(self.cfg_dataset, split_name=self.cfg.eval.cache_latents.split_name, mode='eval')
             else:
-                test_dataset = NuplanDatasetAutoEncoder(self.cfg_dataset, split_name=self.cfg.eval.cache_latents.split_name, mode='eval')
+                test_dataset = NuplanDatasetAutoEncoder3DTemp(self.cfg_dataset, split_name=self.cfg.eval.cache_latents.split_name, mode='eval')
             latent_dir = os.path.join(self.cfg.eval.cache_latents.latent_dir, self.cfg.eval.cache_latents.split_name)
             if not os.path.exists(latent_dir):
                 os.makedirs(latent_dir, exist_ok=True)
@@ -58,7 +58,7 @@ class ScenarioDreamerAutoEncoder3D(pl.LightningModule):
             if self.cfg.dataset_name == 'waymo':
                 test_dataset = WaymoDatasetAutoEncoder(self.cfg_dataset, split_name='test', mode='eval')
             else:
-                test_dataset = NuplanDatasetAutoEncoder3D(self.cfg_dataset, split_name='test', mode='eval')
+                test_dataset = NuplanDatasetAutoEncoder3DTemp(self.cfg_dataset, split_name='test', mode='eval')
         test_dataloader = DataLoader(test_dataset, 
                             batch_size=self.cfg.datamodule.val_batch_size, 
                             shuffle=False,
