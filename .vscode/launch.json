@@ -16,7 +16,6 @@
             "name": "preprocess_scedreamer_dev_nuplan",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "data_processing/nuplan/preprocess_dataset_nuplan_wimage.py",
             "console": "integratedTerminal",
             "args": [
@@ -32,7 +31,6 @@
             "name": "preprocess_scedreamer_dev_nuplan_3d_images_temp",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "data_processing/nuplan/preprocess_dataset_nuplan_3d_wimages_temp.py",
             "console": "integratedTerminal",
             "args": [
@@ -49,7 +47,6 @@
             "name": "generate_samples",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "eval_latent_diffusion.py",
             "console": "integratedTerminal",
             "args": [
@@ -71,7 +68,6 @@
             "name": "generate_samples_inpainting",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "eval_latent_diffusion.py",
             "console": "integratedTerminal",
             "args": [
@@ -93,7 +89,6 @@
             "name": "generate_samples_simu",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "eval_latent_diffusion.py",
             "console": "integratedTerminal",
             "args": [
@@ -115,7 +110,6 @@
             "name": "train_autoencoder_scedreamer_waymo",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "train_autoencoder_waymo.py",
             "console": "integratedTerminal",
             "args": [
@@ -130,7 +124,6 @@
             "name": "train_autoencoder_scedreamer_nuplan",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "train_autoencoder_nuplan.py",
             "console": "integratedTerminal",
             "args": [
@@ -147,7 +140,6 @@
             "name": "caching_autoencoder3d_scenariodreamer_nuplan",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/samuele.ruffino/dev/scenario-dreamer-followup/",
             "program": "eval.py",
             "console": "integratedTerminal",
             "args": [
@@ -167,7 +159,6 @@
             "name": "eval_autoencoder3d_scenariodreamer_nuplan",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "eval.py",
             "console": "integratedTerminal",
             "args": [
@@ -184,7 +175,6 @@
             "name": "train_autoencoder3d_scenariodreamer_nuplan",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup/",
             "program": "train.py",
             "console": "integratedTerminal",
             "args": [
@@ -202,7 +192,6 @@
             "name": "train_ldm3d_image_nuplan",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "/mnt/efs/users/samuele.ruffino/dev/scenario-dreamer-followup/",
             "program": "train.py",
             "console": "integratedTerminal",
             "args": [
@@ -211,14 +200,12 @@
                 "ldm.model.autoencoder_run_name=scenario_dreamer_autoencoder3d_nuplan",
                 "ae.train.run_name=ldm_debug",
                 "ldm.model.num_l2l_blocks=3",
-                "ae.train.track=True"
+                "ae.train.track=True",
+                "ldm.train.devices=1"
             ],
             "env": {
                 "CUDA_VISIBLE_DEVICES": "7",
-                "TORCH_USE_CUDA_DSA": "1",
-                " CUDA_LAUNCH_BLOCKING": "1"
             },
-            // "ldm.train.num_devices=1", this is not implemented in the original luke's repo yet!!
             "justMyCode": false
         },
     ]

@@ -47,7 +47,7 @@ def find_temporal_feature_paths(root_path, feature_name):
     return sequence_paths
 
 
-@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3d")  
+@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3dtemp")  
 def main(cfg):  
     print("Creating train/val/test splits for temporal SLEDGE autoencoder cache files...")  
     autoencoder_cache_path = f"/opt/dlami/nvme/sledge_workspace/caches/{sledge_preprocessed_data_folder}"  

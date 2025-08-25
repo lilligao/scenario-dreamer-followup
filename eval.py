@@ -78,7 +78,7 @@ def eval_autoencoder(cfg, save_dir=None):
     tester.test(model, ckpt_path=ckpt_path)
 
 
-@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3d")
+@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3dtemp")
 def main(cfg):
     # need to track whether we are evaluating a nuplan or waymo model as 
     # nuplan predicts lane types (lane/green light/red light) and waymo does not

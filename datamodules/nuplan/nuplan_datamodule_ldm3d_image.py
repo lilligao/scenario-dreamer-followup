@@ -7,7 +7,7 @@ import os
 def worker_init_fn(worker_id):
     os.sched_setaffinity(0, range(os.cpu_count())) 
 
-class NuplanDataModuleLDM(pl.LightningDataModule):
+class NuplanDataModuleLDM3D(pl.LightningDataModule):
 
     def __init__(self,
                  train_batch_size,
@@ -16,7 +16,7 @@ class NuplanDataModuleLDM(pl.LightningDataModule):
                  pin_memory,
                  persistent_workers,
                  dataset_cfg):
-        super(NuplanDataModuleLDM, self).__init__()
+        super(NuplanDataModuleLDM3D, self).__init__()
         self.train_batch_size = train_batch_size
         self.val_batch_size = val_batch_size 
         self.num_workers = num_workers

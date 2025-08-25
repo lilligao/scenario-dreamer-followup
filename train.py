@@ -3,8 +3,10 @@ import hydra
 from models.scenario_dreamer_autoencoder import ScenarioDreamerAutoEncoder
 from models.scenario_dreamer_autoencoder3d import ScenarioDreamerAutoEncoder3D
 from models.scenario_dreamer_ldm import ScenarioDreamerLDM
+from models.scenario_dreamer_ldm3d import ScenarioDreamerLDM3D
 
 import torch
+import torch.multiprocessing as mp
 import shutil
 torch.set_float32_matmul_precision('medium')
 import pytorch_lightning as pl
@@ -75,11 +77,15 @@ def train_ldm(cfg, cfg_ae, save_dir=None):
                         )
     
     # hack to avoid gpu memory issues when loading from checkpoint
-    # TODO: change here for 3d_image support of ldm model
-    if ckpt_path is not None:
-        model = ScenarioDreamerLDM.load_from_checkpoint(ckpt_path, cfg=cfg, cfg_ae=cfg_ae, map_location='cpu')
+    if '3d' in cfg.model_name:
+        ldm_model = ScenarioDreamerLDM3D
     else:
-        model = ScenarioDreamerLDM(cfg=cfg, cfg_ae=cfg_ae)
+        ldm_model = ScenarioDreamerLDM
+        
+    if ckpt_path is not None:
+        model = ldm_model.load_from_checkpoint(ckpt_path, cfg=cfg, cfg_ae=cfg_ae, map_location='cpu')
+    else:
+        model = ldm_model(cfg=cfg, cfg_ae=cfg_ae)
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
 
 
@@ -158,6 +164,7 @@ def main(cfg):
         OmegaConf.set_struct(cfg_ae, False)
         cfg.dataset_name = dataset_name
         cfg_ae.dataset_name = dataset_name
+        cfg.model_name = model_name
         OmegaConf.set_struct(cfg, True)    # relock
         OmegaConf.set_struct(cfg_ae, True)
     
@@ -174,4 +181,5 @@ def main(cfg):
         train_ldm(cfg, cfg_ae, save_dir) 
 
 if __name__ == '__main__':
+    mp.set_start_method("spawn", force=True)
     main()

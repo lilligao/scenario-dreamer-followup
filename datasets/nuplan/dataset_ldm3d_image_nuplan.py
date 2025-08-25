@@ -9,6 +9,7 @@ import sys
 from tqdm import tqdm
 from cfgs.config import CONFIG_PATH
 from typing import Any, Dict
+import torch.multiprocessing as mp
 
 from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader
@@ -195,5 +196,6 @@ def main(cfg):
 
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    mp.set_start_method("spawn", force=True)
     main()
