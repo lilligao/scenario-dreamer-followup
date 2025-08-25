@@ -7,6 +7,7 @@ from tqdm import tqdm
 import pickle
 from datasets.waymo.dataset_ldm_waymo import WaymoDatasetLDM
 from datasets.nuplan.dataset_ldm_nuplan import NuplanDatasetLDM
+from datasets.nuplan.dataset_ldm3d_image_nuplan import NuplanDatasetLDM3D
 from utils.data_helpers import sample_latents
 
 def create_lambda_lr_cosine(cfg):
@@ -113,7 +114,10 @@ def cache_latent_stats(cfg):
     if cfg.dataset_name == 'waymo':
         dset = WaymoDatasetLDM(cfg.dataset, split_name='train')
     else:
-        dset = NuplanDatasetLDM(cfg.dataset, split_name='train')
+        if cfg.dataset.load_images:
+            dset = NuplanDatasetLDM3D(cfg.dataset, split_name='train')
+        else:
+            dset = NuplanDatasetLDM(cfg.dataset, split_name='train')
     print("Caching latent stats (mean/std of agent/lane latents). Size of dataset: ", len(dset))
     
     os.makedirs(cfg.dataset.latent_stats_dir, exist_ok=True)

@@ -1,14 +1,13 @@
 import pytorch_lightning as pl 
-
-from datasets.nuplan.dataset_autoencoder3d_wimages_temp_nuplan import NuplanDatasetAutoEncoder3DTemp
+from datasets.nuplan.dataset_ldm3d_image_nuplan import NuplanDatasetLDM3D
 from torch_geometric.loader import DataLoader
 import os
 
-# this is so that CPUs are not suboptimally utilized
+# this ensures CPUs are not suboptimally utilized
 def worker_init_fn(worker_id):
     os.sched_setaffinity(0, range(os.cpu_count())) 
 
-class NuplanDataModuleAutoEncoder3DTemp(pl.LightningDataModule):
+class NuplanDataModuleLDM(pl.LightningDataModule):
 
     def __init__(self,
                  train_batch_size,
@@ -17,7 +16,7 @@ class NuplanDataModuleAutoEncoder3DTemp(pl.LightningDataModule):
                  pin_memory,
                  persistent_workers,
                  dataset_cfg):
-        super(NuplanDataModuleAutoEncoder3DTemp, self).__init__()
+        super(NuplanDataModuleLDM, self).__init__()
         self.train_batch_size = train_batch_size
         self.val_batch_size = val_batch_size 
         self.num_workers = num_workers
@@ -27,8 +26,8 @@ class NuplanDataModuleAutoEncoder3DTemp(pl.LightningDataModule):
         
 
     def setup(self, stage):
-        self.train_dataset = NuplanDatasetAutoEncoder3DTemp(self.cfg_dataset, split_name='train')
-        self.val_dataset = NuplanDatasetAutoEncoder3DTemp(self.cfg_dataset, split_name='val') 
+        self.train_dataset = NuplanDatasetLDM3D(self.cfg_dataset, split_name='train')
+        self.val_dataset = NuplanDatasetLDM3D(self.cfg_dataset, split_name='val') 
 
 
     def train_dataloader(self):
@@ -44,7 +43,7 @@ class NuplanDataModuleAutoEncoder3DTemp(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(self.val_dataset,
                           batch_size=self.val_batch_size,
-                          shuffle=False,
+                          shuffle=True,
                           num_workers=self.num_workers,
                           pin_memory=self.pin_memory,
-                          drop_last=False)
+                          drop_last=True)

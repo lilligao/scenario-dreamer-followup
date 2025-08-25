@@ -3,7 +3,7 @@ import pickle
 from utils.train_helpers import create_lambda_lr_cosine, create_lambda_lr_linear
 from datasets.waymo.dataset_autoencoder_waymo import WaymoDatasetAutoEncoder
 from datasets.nuplan.dataset_autoencoder_nuplan import NuplanDatasetAutoEncoder
-from datasets.nuplan.dataset_autoencoder3d_nuplan_wimages_temp import NuplanDatasetAutoEncoder3DTemp
+from datasets.nuplan.dataset_autoencoder3d_wimages_temp_nuplan import NuplanDatasetAutoEncoder3DTemp
 from nn_modules.autoencoder import AutoEncoder
 from torch_geometric.loader import DataLoader
 
@@ -136,6 +136,8 @@ class ScenarioDreamerAutoEncoder3D(pl.LightningModule):
         lane_batch = data['lane'].batch.cpu().numpy()
         if self.cfg.dataset_name == 'nuplan':
             map_id = data['map_id'].cpu().numpy()
+            ego_state_og = data['ego_state_og']  # [ego_translation, ego_rotation, ego_dim]
+            cam_infos = data['cam_info']
 
         for i in range(data.batch_size):
             idx = data.idx[i].item()
@@ -183,6 +185,8 @@ class ScenarioDreamerAutoEncoder3D(pl.LightningModule):
                 d['nocturne_compatible'] = noct_compatible
             else:
                 d['map_id'] = map_id_i
+                d['ego_state_og'] = ego_state_og
+                d['cam_infos'] = cam_infos
             
             with open(file_path, 'wb') as f:
                 pickle.dump(d, f)

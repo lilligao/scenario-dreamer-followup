@@ -16,7 +16,7 @@ torch.set_printoptions(threshold=100000)
 import numpy as np
 np.set_printoptions(suppress=True, threshold=sys.maxsize)
 import sys
-sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
+# sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
 from cfgs.config import CONFIG_PATH, NUPLAN_VEHICLE, NUPLAN_PEDESTRIAN, NUPLAN_STATIC_OBJECT, PARTITIONED
 
 from utils.data_container import ScenarioDreamerData
@@ -24,7 +24,8 @@ from utils.lane_graph_helpers import resample_polyline, adjacency_matrix_to_adja
 from utils.pyg_helpers import get_edge_index_bipartite, get_edge_index_complete_graph
 from utils.torch_helpers import from_numpy
 from utils.data_helpers import get_lane_connection_type_onehot_nuplan, get_object_type_onehot_nuplan, get_lane_type_onehot_nuplan, modify_agent_states, normalize_scene_3d, randomize_indices
-from utils.cam_img_utils import trans_matrix_inv,trans_matrix, transform, project_cam_to_image, project_cam_to_image_nodrop, plot_projection, plot_projection_all_views, plot_topdown_lanes_and_agents, load_cam_views, create_se2_4x4_matrix, get_3d_box_corners, plot_cameras_in_ego, transform_heading
+from utils.cam_img_utils import trans_matrix, transform, project_cam_to_image, project_cam_to_image_nodrop, plot_projection_all_views, plot_topdown_lanes_and_agents, load_cam_views, get_3d_box_corners, transform_heading
+
 
 class NuplanDatasetAutoEncoder3DTemp(Dataset):
     """A Torch-Geometric ``Dataset`` wrapping NuPlan scenes for auto-encoding.
@@ -48,7 +49,6 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
             "train" or "eval" - affects shuffling/randomisation inside
             :meth:`get_data`.
         """
-
         super(NuplanDatasetAutoEncoder3DTemp, self).__init__()
         self.cfg = cfg
         self.data_root_raw = self.cfg.sledge_raw_dataset_path
@@ -63,8 +63,6 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
 
         if not self.preprocess:
             self.files = self._collect_frame_paths_from_sequences()
-            # for debugging
-            # self.files = self.files[::40]
         else:
             # For preprocessed data, still look for individual files
             self.files = sorted(glob.glob(self.preprocessed_dir + "/*.pkl"))
@@ -338,7 +336,6 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
         processed_agent_states = []
         agent_types = []
         ground_heights = []
-
         """
         `ego` indices:
         0: vel_x
@@ -573,6 +570,9 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
             lane_types = data['lane_types']
             lg_type = data['lg_type']
             map_id = data['map_id']
+            cam_infos = data['cam_info']
+            ego_state_og = data['ego_state_og']  # [ego_translation, ego_rotation, ego_dim, ego_heading]
+
 
         # ───────────────────────────────────────────────────────────────
         # SLOW PATH: raw Nuplan pickle → preprocess and cache to disk
@@ -677,7 +677,6 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
                     agent_boxes_uv_list.append(uv)
                     agent_boxes_vis_list.append(mask)
 
-
             if num_agents == 0:
                 d = {
                 'normalize_statistics': None,
@@ -712,8 +711,6 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
                     else:
                         road_connection_types.append(get_lane_connection_type_onehot_nuplan('none'))
                 road_connection_types = np.array(road_connection_types)
-
-
 
                 if self.load_images and self.cfg.debug_vis:
                     ## Get 3d points
@@ -755,8 +752,6 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
                         agent_boxes_vis=agent_boxes_vis_list,
                         agent_types=agent_types
                     )
-
-
 
                 to_pickle = dict()
                 to_pickle['idx'] = idx
@@ -817,7 +812,6 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
             max_height=self.cfg.max_height,
             fov_z=self.cfg.fov_z)
 
-
         # randomize order of indices except for ego (which is always index 0)
         if self.mode == 'train':
             agent_states, agent_types, road_points, lane_types, edge_index_lane_to_lane = randomize_indices(
@@ -848,12 +842,10 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
             num_agents_after_origin = 0
             num_lanes_after_origin = 0
 
-
         assert a2a_mask.shape[0] == edge_index_agent_to_agent.shape[1]
         assert l2l_mask.shape[0] == edge_index_lane_to_lane.shape[1]
         assert l2a_mask.shape[0] == edge_index_lane_to_agent.shape[1]
         assert lane_partition_mask.shape[0] == num_lanes
-
 
         # --------------------------------------------------------------
         # ️Assemble final PyG heterogeneous graph ------------------
@@ -891,6 +883,8 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
         d['lane', 'to', 'lane'].encoder_mask = l2l_mask
         d['lane', 'to', 'agent'].encoder_mask = l2a_mask
         d['agent', 'to', 'agent'].encoder_mask = a2a_mask
+        d['cam_info'] = cam_infos
+        d['ego_state_og'] = ego_state_og
 
         return d
 

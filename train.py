@@ -75,6 +75,7 @@ def train_ldm(cfg, cfg_ae, save_dir=None):
                         )
     
     # hack to avoid gpu memory issues when loading from checkpoint
+    # TODO: change here for 3d_image support of ldm model
     if ckpt_path is not None:
         model = ScenarioDreamerLDM.load_from_checkpoint(ckpt_path, cfg=cfg, cfg_ae=cfg_ae, map_location='cpu')
     else:
@@ -136,7 +137,7 @@ def train_autoencoder(cfg, save_dir=None):
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
 
 
-@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3d")
+@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="config3dtemp")
 def main(cfg):
     # need to track whether we are training a nuplan or waymo model as 
     # nuplan predicts lane types (lane/green light/red light) and waymo does not
@@ -169,7 +170,7 @@ def main(cfg):
     
     if 'autoencoder' in model_name:
         train_autoencoder(cfg, save_dir)
-    elif model_name == 'ldm':
+    elif 'ldm' in model_name:
         train_ldm(cfg, cfg_ae, save_dir) 
 
 if __name__ == '__main__':

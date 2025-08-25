@@ -1,5 +1,5 @@
 scratch_root: "/opt/dlami/nvme/scenario_dreamer_data/" # ${oc.env:SCRATCH_ROOT}  #"/data/lili.gao/datasets/waymo"# scratch root directory, used for datasets and checkpoints
-dataset_root: "/opt/dlami/nvme/scenario_dreamer_data/"  # root directory for datasets
+dataset_root: "/opt/dlami/nvme/scenario_dreamer_data"  # root directory for datasets
 project_root: /mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup # ${oc.env:PROJECT_ROOT} # project root directory
 waymo_data_folder: ${dataset_root}/waymo_open_dataset_motion_v_1_1_0 # path to the Waymo Open Dataset
 waymo_train_folder: ${waymo_data_folder}/training # path to the training set of the Waymo Open Dataset
@@ -44,8 +44,8 @@ defaults:
   - eval@ae.eval:       ${dataset_name}_autoencoder3dtemp
   - model@ae.model:      ${dataset_name}_autoencoder3d
   - datamodule@ae.datamodule: ${dataset_name}_autoencoder3dtemp
-  - dataset@ldm.dataset:    ${dataset_name}_ldm
-  - train@ldm.train:      ${dataset_name}_ldm
-  - eval@ldm.eval:       ${dataset_name}_ldm
-  - model@ldm.model:      ${dataset_name}_ldm
-  - datamodule@ldm.datamodule: ${dataset_name}_ldm
+  - dataset@ldm.dataset:    ${dataset_name}_ldm3d_image
+  - train@ldm.train:      ${dataset_name}_ldm3d_image
+  - eval@ldm.eval:       ${dataset_name}_ldm3d_image
+  - model@ldm.model:      ${dataset_name}_ldm3d_image
+  - datamodule@ldm.datamodule: ${dataset_name}_ldm3d_image
