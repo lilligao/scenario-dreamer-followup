@@ -1,4 +1,4 @@
-export SCRATCH_ROOT="/opt/dlami/nvme/scenario_dreamer_data/" #"/data/lili.gao/datasets/waymo"
+export SCRATCH_ROOT="/opt/dlami/nvme/scenario_dreamer_data" #"/data/lili.gao/datasets/waymo"
 export PYTHONPATH=$(pwd):$PYTHONPATH
 export PROJECT_ROOT=$(pwd) 
 export DATASET_ROOT=$SCRATCH_ROOT

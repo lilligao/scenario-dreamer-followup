@@ -2,12 +2,12 @@ import hydra
 import random
 from tqdm import tqdm
 import sys
-sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
+# sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
 from cfgs.config import CONFIG_PATH
 import multiprocessing as mp
 from pathlib import Path
 from omegaconf import OmegaConf
-from datasets.nuplan.dataset_autoencoder3d_nuplan_wimages_temp import NuplanDatasetAutoEncoder3DTemp
+from datasets.nuplan.dataset_autoencoder3d_wimages_temp_nuplan import NuplanDatasetAutoEncoder3DTemp
 # ───────────────────────────────────────────────────────────
 #  helper so the Pool can pickle it
 # ───────────────────────────────────────────────────────────

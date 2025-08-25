@@ -15,6 +15,8 @@ from torch_geometric.data import Dataset
 torch.set_printoptions(threshold=100000)
 import numpy as np
 np.set_printoptions(suppress=True, threshold=sys.maxsize)
+import sys
+# sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
 from cfgs.config import CONFIG_PATH, NUPLAN_VEHICLE, NUPLAN_PEDESTRIAN, NUPLAN_STATIC_OBJECT, PARTITIONED
 
 from utils.data_container import ScenarioDreamerData
