@@ -688,7 +688,7 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
             # Process *both* regular & partitioned lane graphs
             lg_dict = {
                 'regular': compact_lane_graph_scene,
-                #'partitioned': compact_lane_graph_inpainting ## uncomment for debugging
+                'partitioned': compact_lane_graph_inpainting ## uncomment for debugging
             }
             for lg_type in lg_dict.keys():
                 lg = lg_dict[lg_type]

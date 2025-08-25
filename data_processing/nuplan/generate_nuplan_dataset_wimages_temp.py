@@ -113,7 +113,7 @@ def main(cfg):
                     filename_jpg = value.get('filename_jpg', '')  
                     file_exists.append(os.path.exists(os.path.join(image_root, filename_jpg)))  
                   
-                if False in file_exists or len(cam_infos) < 1: #!= 8:
+                if False in file_exists or len(cam_infos)!= 8:
                     print(f"Skipping sequence {sequence_id} due to missing camera files or incorrect number of cameras.")
                     skip_count += 1  
                     continue  
