@@ -104,7 +104,7 @@ def load_cam_views(cam_infos, cam_order, image_root, do_undistortion=False):
             distortion = np.array(cam_data['distortion'])  # unused unless you want to undistort
             cam_img = undistort_img(cam_img, intrinsic, distortion, (width, height))
         
-        cam_img = cam_img.astype(np.float32) / 255.0  # Normalize to [0, 1]
+        cam_img = (cam_img / 255.).astype(np.float32, copy=False)
         cam_imgs.append(cam_img)
 
         T_cam_tf_inv = trans_matrix_inv(

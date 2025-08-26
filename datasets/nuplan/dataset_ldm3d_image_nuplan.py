@@ -45,7 +45,14 @@ class NuplanDatasetLDM3D(Dataset):
             os.makedirs(self.dataset_dir, exist_ok=True)
 
         self.files = sorted(glob.glob(self.dataset_dir + "/*.pkl"))
+        ### DEBUG
+        # self.files = self.files[:500]
+        ###
         self.dset_len = len(self.files)
+
+        if self.load_images:
+            self.image_root = f"{self.cfg.nuplan_data_root}/sensor_blobs"  # this should be the base path before filename_jpg
+            self.cam_order = ['CAM_F0', 'CAM_L0', 'CAM_R0', 'CAM_L1', 'CAM_R1', 'CAM_L2', 'CAM_R2', 'CAM_B0']
 
 
     def get_data(self, data, idx):
@@ -61,11 +68,9 @@ class NuplanDatasetLDM3D(Dataset):
         edge_index_lane_to_agent = data['edge_index_lane_to_agent']
         edge_index_agent_to_agent = data['edge_index_agent_to_agent']
         scene_type = data['scene_type']
-        ### CHANGE SAMU
-        ego_state_og = data['ego_state_og']  # [ego_translation, ego_rotation, ego_dim]
+        ego_state_og = data['ego_state_og']  # [ego_translation, ego_rotation, ego_dim, z_coord]
         if self.load_images:
             cam_infos = data['cam_infos']
-        ###
         map_id = np.array([data['map_id']], dtype=int)
         num_lanes = lane_mu.shape[0]
         num_agents = agent_mu.shape[0]
@@ -108,26 +113,32 @@ class NuplanDatasetLDM3D(Dataset):
         d['lane', 'to', 'lane'].edge_index = from_numpy(edge_index_lane_to_lane)
         d['agent', 'to', 'agent'].edge_index = from_numpy(edge_index_agent_to_agent)
         d['lane', 'to', 'agent'].edge_index = from_numpy(edge_index_lane_to_agent)
-        ### CHANGE SAMU
         d['ego_state_og'] = from_numpy(ego_state_og)
         if self.load_images:
             d['cam_infos'] = cam_infos
             if len(cam_infos) != 8:
                 raise ValueError(f"Expected 8 cameras, but got {len(cam_infos)}. Please check the data extraction script.")
+            # load backwarded images only if inpainting mode (lg_type==1)
+            cam_order = self.cam_order
+            if scene_type == 1:
+                cam_order = self.cam_order[:3]  # only use front and side cameras for inpainting
 
             cam_img_stack, T_cam_tf_stack, T_cam_tf_inv_stack, T_cam_ego_inv_stack, intrinsics_stack, widths, heights  = load_cam_views(
                 cam_infos=cam_infos,
-                cam_order=self.cam_order,
+                cam_order=cam_order,
                 image_root=self.image_root,
                 do_undistortion=False
             )
+            d['cam_img_stack'] = from_numpy(cam_img_stack)
+            d['T_cam_tf_stack'] = from_numpy(T_cam_tf_stack)
+            d['T_cam_tf_inv_stack'] = from_numpy(T_cam_tf_inv_stack)
+            d['T_cam_ego_inv_stack'] = from_numpy(T_cam_ego_inv_stack)
+            d['intrinsics_stack'] = from_numpy(intrinsics_stack)
+            d['img_widths'] = from_numpy(widths)
+            d['img_heights'] = from_numpy(heights)
             # TODO:
-            # - load stacked images
-            # - usupport for loading only back images if inpainting mode (if lg_type==1)
-            # - apply augmentations
-
-        ###
-
+            # - apply augmentations (resizing, random crop, ect)
+            # - add viz
         return d
 
 

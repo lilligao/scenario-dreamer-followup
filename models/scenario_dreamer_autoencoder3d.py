@@ -185,8 +185,14 @@ class ScenarioDreamerAutoEncoder3D(pl.LightningModule):
                 d['nocturne_compatible'] = noct_compatible
             else:
                 d['map_id'] = map_id_i
-                d['ego_state_og'] = ego_state_og
-                d['cam_infos'] = cam_infos
+                d['ego_state_og'] = ego_state_og[i]
+                # extract only the ith element from each entry in cam_infos
+                cam_infos_i = {}
+                for k,v in cam_infos.items():
+                    cam_infos_i[k] = {}
+                    for k2,v2 in v.items():
+                        cam_infos_i[k][k2] = v2[i]
+                d['cam_infos'] = cam_infos_i
             
             with open(file_path, 'wb') as f:
                 pickle.dump(d, f)
