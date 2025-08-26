@@ -137,8 +137,9 @@ class NuplanDatasetLDM3D(Dataset):
             d['img_widths'] = from_numpy(widths)
             d['img_heights'] = from_numpy(heights)
             # TODO:
-            # - apply augmentations (resizing, random crop, ect)
-            # - add viz
+            # - apply augmentations (resizing, random crop, ect). Maybe we can add it in the dataloader (self.transforms, adn pass it to it)
+            # here /mnt/efs/users/samuele.ruffino/dev/scenario-dreamer-followup/datamodules/nuplan/nuplan_datamodule_ldm3d_image.py
+            # - add vizualization function
         return d
 
 
