@@ -6,9 +6,12 @@ waymo_train_folder: ${waymo_data_folder}/training # path to the training set of 
 waymo_val_folder: ${waymo_data_folder}/validation # path to the validation set of the Waymo Open Dataset
 waymo_test_folder: ${waymo_data_folder}/testing # path to the testing set of the Waymo Open Dataset
 
+# hydra:
+#   run:
+#     dir: ${project_root}/slurm_logs/${now:%Y.%m.%d}/${now:%H.%M.%S}/${hydra.job.override_dirname}
 hydra:
   run:
-    dir: ${project_root}/slurm_logs/${now:%Y.%m.%d}/${now:%H.%M.%S}/${hydra.job.override_dirname}
+    dir: ${project_root}/slurm_logs/${now:%Y.%m.%d}/${now:%H.%M.%S}/${ldm.train.run_name}
 
 generate_waymo_dataset:
   output_data_folder_train: ${dataset_root}/scenario_dreamer_waymo/train # output folder for training data
