@@ -3,7 +3,7 @@ import pickle
 import glob
 from tqdm import tqdm
 from utils.train_helpers import create_lambda_lr_cosine, create_lambda_lr_linear, create_lambda_lr_constant
-from nn_modules.ldm import LDM
+from nn_modules.ldm3d_image import LDM3DCond
 from models.scenario_dreamer_autoencoder3d import ScenarioDreamerAutoEncoder3D
 from utils.data_container import ScenarioDreamerData
 from torch_geometric.loader import DataLoader
