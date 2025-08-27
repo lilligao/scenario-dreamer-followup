@@ -14,13 +14,14 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.callbacks import ModelCheckpoint, ModelSummary
 from pytorch_lightning.strategies import DDPStrategy
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.profilers import AdvancedProfiler, SimpleProfiler, PyTorchProfiler
 from cfgs.config import CONFIG_PATH
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 from utils.train_helpers import cache_latent_stats, set_latent_stats
 
 
-def train_ldm(cfg, cfg_ae, save_dir=None):
+def train_ldm(cfg, cfg_ae, save_dir=None, profiler=None):
     """ Train the Scenario Dreamer Latent Diffusion Model."""
     # check if latent stats are cached, if not, compute them
     if not os.path.exists(cfg.dataset.latent_stats_path):
@@ -62,7 +63,7 @@ def train_ldm(cfg, cfg_ae, save_dir=None):
             shutil.copyfile(ckpt_path, backup_ckpt_path)
             print("Resuming from checkpoint: ", ckpt_path)
             del dummy
-    
+
     trainer = pl.Trainer(accelerator=cfg.train.accelerator,
                          devices=cfg.train.devices,
                          strategy=DDPStrategy(find_unused_parameters=True, gradient_as_bucket_view=True),
@@ -73,7 +74,8 @@ def train_ldm(cfg, cfg_ae, save_dir=None):
                          limit_train_batches=cfg.train.limit_train_batches,
                          limit_val_batches=cfg.train.limit_val_batches,
                          gradient_clip_val=cfg.train.gradient_clip_val,
-                         logger=logger
+                         logger=logger,
+                         profiler=profiler
                         )
     
     # hack to avoid gpu memory issues when loading from checkpoint
@@ -86,10 +88,13 @@ def train_ldm(cfg, cfg_ae, save_dir=None):
         model = ldm_model.load_from_checkpoint(ckpt_path, cfg=cfg, cfg_ae=cfg_ae, map_location='cpu')
     else:
         model = ldm_model(cfg=cfg, cfg_ae=cfg_ae)
-    trainer.fit(model, datamodule, ckpt_path=ckpt_path)
+    try:
+        trainer.fit(model, datamodule, ckpt_path=ckpt_path)
+    finally:
+        profiler.describe()
 
 
-def train_autoencoder(cfg, save_dir=None):
+def train_autoencoder(cfg, save_dir=None, profiler=None):
     """ Train the Scenario Dreamer AutoEncoder model."""
     datamodule = instantiate(cfg.datamodule, dataset_cfg=cfg.dataset)
 
@@ -174,12 +179,25 @@ def main(cfg):
     save_dir = os.path.join(cfg.train.save_dir, cfg.train.run_name)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
+
+    # Profiler
+    # Option 1: Simple wall-time profiler
+    profiler = SimpleProfiler()
+    # Option 2: Detailed Python function-level profiler
+    # profiler = AdvancedProfiler(dirpath=".", filename="profiler.txt")
+    # profiler = PyTorchProfiler(
+    #     dirpath=".",
+    #     filename="pytorch_profiler",
+    #     schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=1), #None,   # or use dict for warmup/active cycles
+    #     record_shapes=True,
+    #     profile_memory=True,
+    #     with_stack=True
+    # )
     
     if 'autoencoder' in model_name:
-        train_autoencoder(cfg, save_dir)
+        train_autoencoder(cfg, save_dir, profiler)
     elif 'ldm' in model_name:
-        train_ldm(cfg, cfg_ae, save_dir) 
+        train_ldm(cfg, cfg_ae, save_dir, profiler)
 
 if __name__ == '__main__':
-    mp.set_start_method("spawn", force=True)
     main()
