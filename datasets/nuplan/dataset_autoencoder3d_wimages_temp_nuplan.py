@@ -1,11 +1,9 @@
 import os
-import sys
 import glob
 import hydra
 import torch
 import pickle
 import random
-import sys
 import copy
 import gzip
 from tqdm import tqdm
@@ -14,9 +12,8 @@ from typing import Any, Dict
 from torch_geometric.data import Dataset
 torch.set_printoptions(threshold=100000)
 import numpy as np
-np.set_printoptions(suppress=True, threshold=sys.maxsize)
 import sys
-# sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
+np.set_printoptions(suppress=True, threshold=sys.maxsize)
 from cfgs.config import CONFIG_PATH, NUPLAN_VEHICLE, NUPLAN_PEDESTRIAN, NUPLAN_STATIC_OBJECT, PARTITIONED
 
 from utils.data_container import ScenarioDreamerData
@@ -639,7 +636,12 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
                 #T_local2global = create_se2_4x4_matrix(ego_state_og[0], ego_state_og[3])
                 T_local2global = trans_matrix(ego_state_og[1], ego_state_og[0])
 
-                #z_agent =  np.ones((agent_states.shape[0], 1)) * height_estimate
+                # Precompute extrinsics for each camera
+                T_extrinsics = [
+                    T_cam_tf_inv_stack[i] @ T_cam_ego_inv_stack[i] @ T_local2global
+                    for i in range(len(self.cam_order))
+                ]
+
                 z_agent = agent_states[:, -2:-1]
                 agent_3d = np.concatenate([agent_states[:, :2], z_agent], axis=1)
                 agent_dim = np.concatenate([agent_states[:, 5:7], agent_states[:, 8:9]], axis=1)
@@ -650,20 +652,26 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
                 for i in range(len(self.cam_order)):
                     agent_ego = transform(agent_global, T_cam_ego_inv_stack[i])
                     agent_cam = transform(agent_ego, T_cam_tf_inv_stack[i])
+                    # alternative
+                    # agent_cam = transform(agent_3d, T_extrinsics[i])
                     agent_uv, agent_mask = project_cam_to_image(agent_cam, intrinsics_stack[i], (widths[i], heights[i])) #
                     agent_uv_list.append(agent_uv)
                 # boxes
-                #agent_corners_ego = get_3d_box_corners(agent_3d, agent_heading, agent_dim)  # (N, 8, 3)
-                #corners_global = transform(agent_corners_ego.reshape(-1, 3), T_local2global).reshape(-1, 8, 3)
+                agent_corners_ego = get_3d_box_corners(agent_3d, agent_heading, agent_dim)  # (N, 8, 3)
+                corners_global = transform(agent_corners_ego.reshape(-1, 3), T_local2global).reshape(-1, 8, 3)
 
                 ego_heading = ego_state_og[3]
                 agent_heading_global = transform_heading(agent_heading, ego_heading)
                 corners_global = get_3d_box_corners(agent_global, agent_heading_global, agent_dim)  # (N, 8, 3)
+                # alternative
+                # corners_3d = get_3d_box_corners(agent_3d, agent_heading, agent_dim)  # (N, 8, 3)
                 agent_boxes_uv_list = []   # list length = num cams; each item: (N, 8, 2)
                 agent_boxes_vis_list = []  # list length = num cams; each item: (N, 8) boolean mask
                 for i in range(len(self.cam_order)):
                     corners_ego = transform(corners_global.reshape(-1, 3), T_cam_ego_inv_stack[i]).reshape(-1, 8, 3)
                     corners_cam = transform(corners_ego.reshape(-1, 3), T_cam_tf_inv_stack[i]).reshape(-1, 8, 3)
+                    # alternative
+                    #corners_cam = transform(corners_3d.reshape(-1, 3), T_extrinsics[i]).reshape(-1, 8, 3)
 
                     # Project all corners; mask marks points behind camera / outside image
                     uv, mask = project_cam_to_image_nodrop(
@@ -722,10 +730,12 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
                     road_global = transform(road_points_3d, T_local2global)
                     # Transform to camera frame
                     road_uv_list = []
-                    #road_ego = transform(road_global, T_global2ego)  # shape (num_lanes * lane_length, 3)
+
                     for i in range(len(self.cam_order)):
                         road_ego = transform(road_global, T_cam_ego_inv_stack[i])  # shape (num_lanes * lane_length, 3)
                         road_cam = transform(road_ego, T_cam_tf_inv_stack[i])
+                        # alternative
+                        #road_cam = transform(road_points_3d, T_extrinsics[i])
                         road_uv, road_mask = project_cam_to_image(road_cam, intrinsics_stack[i], (widths[i], heights[i]))
                         road_uv_list.append(road_uv)
 

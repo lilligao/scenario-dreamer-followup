@@ -1,12 +1,10 @@
 import os
-import sys
 import json
 import glob
 import hydra
 import torch
 import pickle
 import random
-import sys
 from tqdm import tqdm
 from cfgs.config import CONFIG_PATH
 from typing import Any
@@ -15,6 +13,7 @@ from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader
 torch.set_printoptions(threshold=100000)
 import numpy as np
+import sys
 np.set_printoptions(suppress=True, threshold=sys.maxsize)
 
 from utils.data_container import ScenarioDreamerData

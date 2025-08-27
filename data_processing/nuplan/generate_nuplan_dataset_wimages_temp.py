@@ -2,8 +2,6 @@ from pathlib import Path
 import pickle
 import hydra
 import os
-import sys
-sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
 from cfgs.config import CONFIG_PATH
 import yaml
 import shutil

@@ -1,8 +1,6 @@
 import hydra
 import random
 from tqdm import tqdm
-import sys
-# sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
 from cfgs.config import CONFIG_PATH
 import multiprocessing as mp
 from pathlib import Path

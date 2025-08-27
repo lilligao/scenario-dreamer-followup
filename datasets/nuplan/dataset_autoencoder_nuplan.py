@@ -1,11 +1,9 @@
 import os
-import sys
 import glob
 import hydra
 import torch
 import pickle
 import random
-import sys
 import copy
 import gzip
 from tqdm import tqdm
@@ -14,9 +12,8 @@ from typing import Any, Dict
 from torch_geometric.data import Dataset
 torch.set_printoptions(threshold=100000)
 import numpy as np
-np.set_printoptions(suppress=True, threshold=sys.maxsize)
 import sys
-# sys.path.append("/mnt/efs/users/lili.gao/Repos/scenario-dreamer-followup")
+np.set_printoptions(suppress=True, threshold=sys.maxsize)
 from cfgs.config import CONFIG_PATH, NUPLAN_VEHICLE, NUPLAN_PEDESTRIAN, NUPLAN_STATIC_OBJECT, PARTITIONED
 
 from utils.data_container import ScenarioDreamerData
