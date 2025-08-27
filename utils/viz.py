@@ -605,3 +605,34 @@ def visualize_batch_3d(num_samples,
         return images_to_log
     else:
         return None
+
+
+def visualize_bev_and_center(bev_feats, idx=0, save_path="bev_center_vis.png"):
+    """
+    Visualize BEV and center feature maps side by side.
+    
+    Args:
+        bev_feats (dict): Dict with 'bev' and 'center' tensors of shape [B, 1, H, W].
+        idx (int): Batch index to visualize (default: 0).
+        save_path (str): Output path for saved figure.
+    """
+    bev = bev_feats['bev'][idx, 0].detach().cpu().numpy()
+    center = bev_feats['center'][idx, 0].detach().cpu().numpy()
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+
+    im0 = axs[0].imshow(bev, cmap="viridis")
+    axs[0].set_title("BEV Features")
+    plt.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
+
+    im1 = axs[1].imshow(center, cmap="viridis")
+    axs[1].set_title("Center Features")
+    plt.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
+
+    for ax in axs:
+        ax.axis("off")
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    plt.close()
+    print(f"✅ Saved visualization to {save_path}")

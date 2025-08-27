@@ -1,6 +1,9 @@
 import numpy as np
 import torch
 from torch import nn
+from hydra.utils import instantiate
+
+from utils.viz import visualize_bev_and_center
 from utils.diffusion_helpers import (
     cosine_beta_schedule,
     extract
@@ -9,7 +12,6 @@ from utils.losses import GeometricLosses
 from nn_modules.dit3d_image import DiT3DCond
 from cfgs.config import BEFORE_PARTITION
 from utils.torch_helpers import load_encoder_weights
-from hydra.utils import instantiate
 
 class LDM3DCond(nn.Module):
     def __init__(self, cfg):
@@ -57,7 +59,6 @@ class LDM3DCond(nn.Module):
         self.lane_loss_fn = GeometricLosses[loss_type]((1,2))
         self.agent_loss_fn = GeometricLosses[loss_type]((1,2))
 
-        ### CHANGE
         self.image_conditioning = self.cfg_model.image_conditioning
         if self.image_conditioning:
             self.img_encoder = instantiate(cfg.gkt)
@@ -248,7 +249,7 @@ class LDM3DCond(nn.Module):
         lane_mask = data['lane'].partition_mask == BEFORE_PARTITION
         x_lane_noisy[lane_mask] = x_lane[lane_mask]
         
-        agent_noise_pred, lane_noise_pred = self.model(x_agent_noisy, x_lane_noisy, data, t_agent, t_lane, img_feats, cam_infos)
+        agent_noise_pred, lane_noise_pred = self.model(x_agent_noisy, x_lane_noisy, data, t_agent, t_lane, img_feats, cam_infos, unconditional=False)
 
         assert agent_noise.shape == agent_noise_pred.shape
         assert lane_noise.shape == lane_noise_pred.shape
@@ -288,8 +289,9 @@ class LDM3DCond(nn.Module):
                 'extrinsics': data['T_cam_tf_inv_stack'].view(B, N, *data['T_cam_tf_inv_stack'].shape[1:]).to(dtype)
             }
             bev_feats = self.img_encoder(data_image)
-            # TODO: visualize extracted bev representation with images
-            img_feats = bev_feats['bev']  # TODO: or 'center'?? check which one is what 
+            ### DEBUG
+            # visualize_bev_and_center(bev_feats, idx=0, save_path="bev_center_vis.png")
+            img_feats = bev_feats['bev']
             
         else:
             img_feats = None
