@@ -128,12 +128,20 @@ class NuplanDatasetLDM3D(Dataset):
             if scene_type == 1:
                 cam_img_stack[:5, :, :, :] = 0 # [N, H, W, 3], overwrite front pixel values to 0 to keep same shape of cam_img_stack
             
+            cam_img_stack = 0
+            T_local2global = trans_matrix(ego_state_og[1], ego_state_og[0])
+
+            # Precompute extrinsics for each camera
+            T_extrinsics = [
+                T_cam_tf_inv_stack[i] @ T_cam_ego_inv_stack[i] @ T_local2global
+                for i in range(len(self.cam_order))
+            ]
+            
             d['cam_img_stack'] = from_numpy(cam_img_stack)
             d['T_cam_tf_stack'] = from_numpy(T_cam_tf_stack)
             d['T_cam_tf_inv_stack'] = from_numpy(T_cam_tf_inv_stack)
             d['T_cam_ego_inv_stack'] = from_numpy(T_cam_ego_inv_stack)
-            # TODO:
-            # merge T_local2global and T_cam_ego_inv_stack and T_cam_tf_stack as extrinsics, think which one makes sense?
+            d['T_extrinsics'] = from_numpy(np.stack(T_extrinsics))
             d['intrinsics_stack'] = from_numpy(intrinsics_stack)
             d['img_widths'] = from_numpy(widths)
             d['img_heights'] = from_numpy(heights)
