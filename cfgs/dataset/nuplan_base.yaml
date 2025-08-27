@@ -33,3 +33,8 @@ max_lane_y: 32
 min_height: 0.2
 max_height: 3.5
 fov_z: 5
+
+# Image parameters
+image_height_og: 1080 # 224 in GKT
+image_width_og: 1920 # 480 in GKT
+downsample_factor: 1 # downsample images by this factor for BEV feature extraction: shape of (270, 480) with 4
