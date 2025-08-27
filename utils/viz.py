@@ -607,30 +607,52 @@ def visualize_batch_3d(num_samples,
         return None
 
 
-def visualize_bev_and_center(bev_feats, idx=0, save_path="bev_center_vis.png"):
+def visualize_multi_images_and_bev(data_image, bev_feats, idx=0, save_path="debug_vis.png"):
     """
-    Visualize BEV and center feature maps side by side.
-    
+    Visualize multi-view images alongside BEV and Center features.
+
     Args:
-        bev_feats (dict): Dict with 'bev' and 'center' tensors of shape [B, 1, H, W].
-        idx (int): Batch index to visualize (default: 0).
-        save_path (str): Output path for saved figure.
+        data_image (dict): Contains 'image' tensor of shape [B, N, C, H, W].
+        bev_feats (dict): Contains 'bev' and 'center' tensors [B, 1, H, W].
+        idx (int): Batch index to visualize.
+        save_path (str): Output file path.
     """
+    images = data_image['image'][idx].detach().cpu()  # [N, C, H, W]
+    images = (images - images.min()) / (images.max() - images.min() + 1e-8)  # normalize
+    N = images.shape[0]
+
     bev = bev_feats['bev'][idx, 0].detach().cpu().numpy()
     center = bev_feats['center'][idx, 0].detach().cpu().numpy()
 
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    # grid size for camera images
+    ncols = min(N, 4)
+    nrows = int(np.ceil(N / ncols))
 
-    im0 = axs[0].imshow(bev, cmap="viridis")
-    axs[0].set_title("BEV Features")
-    plt.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
+    fig, axs = plt.subplots(nrows + 1, max(ncols, 2), figsize=(15, 8))
 
-    im1 = axs[1].imshow(center, cmap="viridis")
-    axs[1].set_title("Center Features")
-    plt.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
-
-    for ax in axs:
+    # plot all camera views
+    for i in range(N):
+        r, c = divmod(i, ncols)
+        ax = axs[r, c] if nrows > 1 else axs[c]
+        img = images[i].permute(1, 2, 0).numpy()  # C,H,W -> H,W,C
+        ax.imshow(img)
+        ax.set_title(f"Cam {i}")
         ax.axis("off")
+
+    # plot BEV and center features on last row
+    im0 = axs[-1, 0].imshow(bev, cmap="viridis")
+    axs[-1, 0].set_title("BEV Features")
+    axs[-1, 0].axis("off")
+    plt.colorbar(im0, ax=axs[-1, 0], fraction=0.046, pad=0.04)
+
+    im1 = axs[-1, 1].imshow(center, cmap="viridis")
+    axs[-1, 1].set_title("Center Features")
+    axs[-1, 1].axis("off")
+    plt.colorbar(im1, ax=axs[-1, 1], fraction=0.046, pad=0.04)
+
+    # remove last two unsued subplots
+    axs[-1, 2].axis("off")
+    axs[-1, 3].axis("off")
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=150)

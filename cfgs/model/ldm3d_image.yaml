@@ -19,6 +19,3 @@ diffusion_clip: 5 # clip value for diffusion
 
 # image conditioning
 image_conditioning: true # whether to use image conditioning
-# BEV_feature_extractor: ADD
-# latent_dim: ADD
-# TODO: add additional params for the image-conditioned ldm (BEV feature extarctor, latent dimensions, cross-attention params, etc.)

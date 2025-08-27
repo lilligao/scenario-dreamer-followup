@@ -19,9 +19,8 @@ encoder:
     model_name: efficientnet-b4
     layer_names: ['reduction_2', 'reduction_4']
 
-    # TODO: align and integrate this parameter with augmentation setups
-    image_height: 1080 # 224 in GKT
-    image_width: 1920 # 480 in GKT
+    image_height: 224 # 1080 # 224 in GKT
+    image_width: 480 # 1920 # 480 in GKT
 
   cross_view:
     heads: 4
@@ -31,8 +30,8 @@ encoder:
     no_image_features: False
 
     # TODO: align and integrate this parameter with augmentation setups
-    image_height: 1080 # 224 in GKT
-    image_width: 1920 # 480 in GKT
+    image_height: 224 # 1080 # 224 in GKT
+    image_width: 480 # 1920 # 480 in GKT
     # geometry kernel transformer
     bev_z: 1.0
     kernel_h: 7

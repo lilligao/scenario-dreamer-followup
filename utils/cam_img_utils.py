@@ -45,13 +45,16 @@ def create_se2_4x4_matrix(origin_translation: np.ndarray, origin_heading: float)
     return T
 
 
-def load_img(image_root,filename_jpg):
+def load_img(image_root,filename_jpg, downsample_factor):
 
     image_path = os.path.join(image_root, filename_jpg)
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Camera image not found: {image_path}")
 
     img = cv2.imread(image_path)  # BGR
+    if downsample_factor != 1.0:
+        new_size = (int(img.shape[1] / downsample_factor), int(img.shape[0] / downsample_factor))
+        img = cv2.resize(img, new_size, interpolation=cv2.INTER_LINEAR)
     if img is None:
         raise RuntimeError(f"Failed to read image: {image_path}")
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert to RGB
@@ -69,7 +72,7 @@ def undistort_img(img, camera_intrinsics, camera_distortion, img_size):
 
 
 
-def load_cam_views(cam_infos, cam_order, image_root, do_undistortion=False):
+def load_cam_views(cam_infos, cam_order, image_root, do_undistortion=False, downsample_factor=1.0):
     """
     Loads and prepares camera images, ego-to-camera transforms, and intrinsics.
 
@@ -93,7 +96,7 @@ def load_cam_views(cam_infos, cam_order, image_root, do_undistortion=False):
 
     for cam in cam_order:
         cam_data = cam_infos.get(cam)
-        cam_img = load_img(image_root, cam_data['filename_jpg'])
+        cam_img = load_img(image_root, cam_data['filename_jpg'], downsample_factor)
         height, width = cam_img.shape[:2]
         #width, height = cam_data['width'], cam_data['height']
         widths.append(width)

@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from hydra.utils import instantiate
 
-from utils.viz import visualize_bev_and_center
+from utils.viz import visualize_multi_images_and_bev
 from utils.diffusion_helpers import (
     cosine_beta_schedule,
     extract
@@ -286,11 +286,11 @@ class LDM3DCond(nn.Module):
             data_image = {
                 'image': data['cam_img_stack'].view(B, N, *data['cam_img_stack'].shape[1:]).to(dtype),
                 'intrinsics': data['intrinsics_stack'].view(B, N, *data['intrinsics_stack'].shape[1:]).to(dtype),
-                'extrinsics': data['T_extrinsics'].view(B, N, *data['T_extrinsics'].shape[1:]).to(dtype)
+                'extrinsics': data['T_cam_tf_inv_stack'].view(B, N, *data['T_cam_tf_inv_stack'].shape[1:]).to(dtype)
             }
             bev_feats = self.img_encoder(data_image)
             ### DEBUG
-            # visualize_bev_and_center(bev_feats, idx=0, save_path="bev_center_vis.png")
+            # visualize_multi_images_and_bev(data_image, bev_feats, idx=0, save_path="multi_cam_bev_center.png")
             img_feats = bev_feats['bev']
             
         else:
