@@ -188,10 +188,16 @@ class ScenarioDreamerAutoEncoder3D(pl.LightningModule):
                 d['ego_state_og'] = ego_state_og[i]
                 # extract only the ith element from each entry in cam_infos
                 cam_infos_i = {}
-                for k,v in cam_infos.items():
+                for k, v in cam_infos.items():
                     cam_infos_i[k] = {}
-                    for k2,v2 in v.items():
-                        cam_infos_i[k][k2] = v2[i]
+                    for k2, v2 in v.items():
+                        val = v2[i]
+                        # If it's a tensor, ensure it's on CPU
+                        if torch.is_tensor(val):
+                            val = val.detach().cpu()
+                            if val.numel() == 1:
+                                val = val.item()
+                        cam_infos_i[k][k2] = val
                 d['cam_infos'] = cam_infos_i
             
             with open(file_path, 'wb') as f:
