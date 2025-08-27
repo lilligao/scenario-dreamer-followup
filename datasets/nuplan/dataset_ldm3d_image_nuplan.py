@@ -45,14 +45,16 @@ class NuplanDatasetLDM3D(Dataset):
             os.makedirs(self.dataset_dir, exist_ok=True)
 
         self.files = sorted(glob.glob(self.dataset_dir + "/*.pkl"))
-        ### DEBUG
-        # self.files = self.files[:500]
-        ###
         self.dset_len = len(self.files)
 
         if self.load_images:
             self.image_root = f"{self.cfg.nuplan_data_root}/sensor_blobs"  # this should be the base path before filename_jpg
             self.cam_order = ['CAM_F0', 'CAM_L0', 'CAM_R0', 'CAM_L1', 'CAM_R1', 'CAM_L2', 'CAM_R2', 'CAM_B0']
+            self.image_height_og = self.cfg.get('image_height_og', 256)
+            self.image_width_og = self.cfg.get('image_width_og', 256)
+            self.downsample_factor = self.cfg.get('downsample_factor', 1.0)
+            self.image_height = self.cfg.get('image_height', int(self.image_height_og // self.downsample_factor))
+            self.image_width = self.cfg.get('image_width', int(self.image_width_og // self.downsample_factor))
 
 
     def get_data(self, data, idx):
@@ -123,7 +125,8 @@ class NuplanDatasetLDM3D(Dataset):
                 cam_infos=cam_infos,
                 cam_order= self.cam_order,
                 image_root=self.image_root,
-                do_undistortion=False
+                do_undistortion=False,
+                downsample_factor=self.downsample_factor
             )
             if scene_type == 1:
                 cam_img_stack[:5, :, :, :] = 0 # [N, H, W, 3], overwrite front pixel values to 0 to keep same shape of cam_img_stack

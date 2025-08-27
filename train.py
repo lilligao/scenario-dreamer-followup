@@ -170,6 +170,11 @@ def main(cfg):
         cfg.dataset_name = dataset_name
         cfg_ae.dataset_name = dataset_name
         cfg.model_name = model_name
+        # adapt image_height and image_width of gkt to the one in dataset
+        cfg.dataset['image_height'] = int(cfg.dataset['image_height_og'] / cfg.dataset['downsample_factor'])
+        cfg.dataset['image_width'] = int(cfg.dataset['image_width_og'] / cfg.dataset['downsample_factor'])
+        cfg.gkt.encoder.backbone.image_height = cfg.gkt.encoder.cross_view.image_height = cfg.dataset['image_height']
+        cfg.gkt.encoder.backbone.image_width = cfg.gkt.encoder.cross_view.image_width = cfg.dataset['image_width']
         OmegaConf.set_struct(cfg, True)    # relock
         OmegaConf.set_struct(cfg_ae, True)
     
