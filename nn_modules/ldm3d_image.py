@@ -8,6 +8,8 @@ from utils.diffusion_helpers import (
 from utils.losses import GeometricLosses
 from nn_modules.dit3d_image import DiT3DCond
 from cfgs.config import BEFORE_PARTITION
+from utils.torch_helpers import load_encoder_weights
+from hydra.utils import instantiate
 
 class LDM3DCond(nn.Module):
     def __init__(self, cfg):
@@ -58,9 +60,13 @@ class LDM3DCond(nn.Module):
         ### CHANGE
         self.image_conditioning = self.cfg_model.image_conditioning
         if self.image_conditioning:
-            # TODO: instatiate the BEV feature extractor
-            # self.image_feature_extractor = ...
-            pass
+            self.img_encoder = instantiate(cfg.gkt)
+            if self.cfg.model.img_encoder_path is not None:
+                self.img_encoder = load_encoder_weights(
+                    self.img_encoder,
+                    self.cfg_model.img_encoder_path,
+                    prefix='backbone'
+                )
 
     
     def predict_start_from_noise(self, x_t, t, noise):
@@ -273,10 +279,18 @@ class LDM3DCond(nn.Module):
 
         # images for image conditioning
         if self.image_conditioning:
-            imgs = data['cam_img_stack'].to(x_agent.device)
             cam_infos = data['cam_infos']
-            # TODO: extract image features
-            # img_feats = self.image_feature_extractor(imgs)
+            B, N =  data.batch_size, 8 # TODO: overwrite number of camera from config
+            dtype = torch.float32
+            data_image = {
+                'image': data['cam_img_stack'].view(B, N, *data['cam_img_stack'].shape[1:]).to(dtype),
+                'intrinsics': data['intrinsics_stack'].view(B, N, *data['intrinsics_stack'].shape[1:]).to(dtype),
+                'extrinsics': data['T_cam_tf_inv_stack'].view(B, N, *data['T_cam_tf_inv_stack'].shape[1:]).to(dtype)
+            }
+            bev_feats = self.img_encoder(data_image)
+            # TODO: visualize extracted bev representation with images
+            img_feats = bev_feats['bev']  # TODO: or 'center'?? check which one is what 
+            
         else:
             img_feats = None
             cam_infos = None

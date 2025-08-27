@@ -105,6 +105,7 @@ def load_cam_views(cam_infos, cam_order, image_root, do_undistortion=False):
             cam_img = undistort_img(cam_img, intrinsic, distortion, (width, height))
         
         cam_img = (cam_img / 255.).astype(np.float32, copy=False)
+        cam_img = np.transpose(cam_img, (2, 0, 1))           # HWC -> CHW
         cam_imgs.append(cam_img)
 
         T_cam_tf_inv = trans_matrix_inv(
@@ -261,6 +262,7 @@ def plot_projection(img, road_uv, agent_uv, cam_name, save_dir, file_prefix):
     Returns:
         None
     """
+    img = np.transpose(img, (1, 2, 0))  # CHW -> HWC
     plt.imshow(img)
 
     if road_uv is not None and len(road_uv) > 0:
@@ -276,61 +278,6 @@ def plot_projection(img, road_uv, agent_uv, cam_name, save_dir, file_prefix):
     save_path = os.path.join(save_dir, f'{file_prefix}_{cam_name}.png')
     plt.savefig(save_path, dpi=200, bbox_inches='tight', pad_inches=0)
     plt.clf()
-
-
-
-def plot_projection_all_views_old(cam_imgs, road_uvs, agent_uvs, cam_order,
-                               topdown_img=None, save_dir=None, file_prefix='', figsize=(20, 6)):
-    """
-    Plots 8 camera views in 2 rows and optionally a top-down view spanning two rows in column 5.
-
-    Args:
-        cam_imgs (list of np.ndarray): 8 camera view images.
-        road_uvs (list of np.ndarray): Road projections per camera.
-        agent_uvs (list of np.ndarray): Agent projections per camera.
-        cam_order (list of str): Camera names like ['CAM_FRONT', ...].
-        topdown_img (np.ndarray or None): Optional top-down image to display.
-        save_path (str or None): If set, saves the figure to this path.
-        figsize (tuple): Size of the whole figure.
-
-    Returns:
-        np.ndarray: RGB image of the entire figure (even if not saved).
-    """
-    fig = plt.figure(figsize=figsize)
-    gs = gridspec.GridSpec(2, 5, width_ratios=[1, 1, 1, 1, 1])
-
-    axes = []
-    for i in range(8):
-        row = i // 4
-        col = i % 4
-        ax = fig.add_subplot(gs[row, col])
-        axes.append(ax)
-
-        img = cam_imgs[i]
-        road_uv = road_uvs[i]
-        agent_uv = agent_uvs[i]
-
-        ax.imshow(img)
-        if road_uv is not None and len(road_uv) > 0:
-            ax.scatter(road_uv[:, 0], road_uv[:, 1], c='cyan', s=1, label='Road')
-        if agent_uv is not None and len(agent_uv) > 0:
-            ax.scatter(agent_uv[:, 0], agent_uv[:, 1], c='red', s=3, label='Agents')
-
-        ax.set_title(cam_order[i])
-        ax.axis('off')
-
-    # Top-down plot on the last column spanning both rows
-    if topdown_img is not None:
-        ax_td = fig.add_subplot(gs[:, 4])  # span both rows
-        ax_td.imshow(topdown_img)
-        ax_td.set_title("Top-down view")
-        ax_td.axis('off')
-
-    plt.tight_layout()
-    os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, f'{file_prefix}_multi_view_projection.png')
-    plt.savefig(save_path, dpi=300, bbox_inches='tight', pad_inches=0)
-    plt.close()
 
 
 
@@ -359,6 +306,7 @@ def plot_projection_all_views(
         ax = fig.add_subplot(gs[row, col])
 
         img = cam_imgs[i]
+        img = np.transpose(img, (1, 2, 0))  # CHW -> HWC
         h, w = img.shape[:2]
 
         if normalize_extent:

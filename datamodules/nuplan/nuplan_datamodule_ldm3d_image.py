@@ -37,13 +37,15 @@ class NuplanDataModuleLDM3D(pl.LightningDataModule):
                           num_workers=self.num_workers,
                           pin_memory=self.pin_memory,
                           drop_last=True,
-                          worker_init_fn=worker_init_fn)
+                          worker_init_fn=worker_init_fn,
+                          persistent_workers=True if self.num_workers > 0 else False)
 
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset,
                           batch_size=self.val_batch_size,
-                          shuffle=True,
+                          shuffle=False, ## TODO: shouldnt this be false? why is it true before?
                           num_workers=self.num_workers,
                           pin_memory=self.pin_memory,
-                          drop_last=True)
+                          drop_last=True,
+                          persistent_workers=True if self.num_workers > 0 else False)

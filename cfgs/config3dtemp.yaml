@@ -52,3 +52,4 @@ defaults:
   - eval@ldm.eval:       ${dataset_name}_ldm3d_image
   - model@ldm.model:      ${dataset_name}_ldm3d_image
   - datamodule@ldm.datamodule: ${dataset_name}_ldm3d_image
+  - model@ldm.gkt: gkt

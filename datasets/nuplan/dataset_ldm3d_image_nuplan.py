@@ -118,21 +118,22 @@ class NuplanDatasetLDM3D(Dataset):
             d['cam_infos'] = cam_infos
             if len(cam_infos) != 8:
                 raise ValueError(f"Expected 8 cameras, but got {len(cam_infos)}. Please check the data extraction script.")
-            # load backwarded images only if inpainting mode (lg_type==1)
-            cam_order = self.cam_order
-            if scene_type == 1:
-                cam_order = self.cam_order[:3]  # only use front and side cameras for inpainting
 
             cam_img_stack, T_cam_tf_stack, T_cam_tf_inv_stack, T_cam_ego_inv_stack, intrinsics_stack, widths, heights  = load_cam_views(
                 cam_infos=cam_infos,
-                cam_order=cam_order,
+                cam_order= self.cam_order,
                 image_root=self.image_root,
                 do_undistortion=False
             )
+            if scene_type == 1:
+                cam_img_stack[:5, :, :, :] = 0 # [N, H, W, 3], overwrite front pixel values to 0 to keep same shape of cam_img_stack
+            
             d['cam_img_stack'] = from_numpy(cam_img_stack)
             d['T_cam_tf_stack'] = from_numpy(T_cam_tf_stack)
             d['T_cam_tf_inv_stack'] = from_numpy(T_cam_tf_inv_stack)
             d['T_cam_ego_inv_stack'] = from_numpy(T_cam_ego_inv_stack)
+            # TODO:
+            # merge T_local2global and T_cam_ego_inv_stack and T_cam_tf_stack as extrinsics, think which one makes sense?
             d['intrinsics_stack'] = from_numpy(intrinsics_stack)
             d['img_widths'] = from_numpy(widths)
             d['img_heights'] = from_numpy(heights)
