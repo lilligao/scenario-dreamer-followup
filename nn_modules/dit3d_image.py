@@ -112,9 +112,9 @@ class DiT3DCond(nn.Module):
                 data, 
                 agent_timestep, 
                 lane_timestep, 
-                unconditional=False,
                 img_feats=None,
-                cam_infos=None):
+                cam_infos=None,
+                unconditional=False,):
         """ Forward pass of the DiT model."""
         # TODO: implement image conditioning here
         
