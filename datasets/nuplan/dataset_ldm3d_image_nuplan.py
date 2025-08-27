@@ -128,7 +128,6 @@ class NuplanDatasetLDM3D(Dataset):
             if scene_type == 1:
                 cam_img_stack[:5, :, :, :] = 0 # [N, H, W, 3], overwrite front pixel values to 0 to keep same shape of cam_img_stack
             
-            cam_img_stack = 0
             T_local2global = trans_matrix(ego_state_og[1], ego_state_og[0])
 
             # Precompute extrinsics for each camera
