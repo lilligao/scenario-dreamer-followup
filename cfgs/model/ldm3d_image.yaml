@@ -19,3 +19,7 @@ diffusion_clip: 5 # clip value for diffusion
 
 # image conditioning
 image_conditioning: true # whether to use image conditioning
+img_feat_dim: ${ldm.gkt.encoder.dim}
+max_img_tokens: 625
+num_img_cross_attn_layers: 1
+num_cross_attn: 3 # Number of cross-attention layers for lane and agent transformers

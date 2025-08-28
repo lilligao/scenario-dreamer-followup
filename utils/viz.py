@@ -607,7 +607,7 @@ def visualize_batch_3d(num_samples,
         return None
 
 
-def visualize_multi_images_and_bev(data_image, bev_feats, idx=0, save_path="debug_vis.png"):
+def visualize_multi_images_and_bev(data_image, bev_feats, idx=0, save_path="debug_vis", suffix=0):
     """
     Visualize multi-view images alongside BEV and Center features.
 
@@ -655,6 +655,8 @@ def visualize_multi_images_and_bev(data_image, bev_feats, idx=0, save_path="debu
     axs[-1, 3].axis("off")
 
     plt.tight_layout()
-    plt.savefig(save_path, dpi=150)
+    os.makedirs(save_path, exist_ok=True)
+    save_dir = os.path.join(save_path, f"multi_cam_bev_center_{suffix}.png")
+    plt.savefig(save_dir, dpi=150)
     plt.close()
-    print(f"✅ Saved visualization to {save_path}")
+    print(f"✅ Saved visualization to {save_dir}")

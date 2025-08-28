@@ -312,6 +312,142 @@ class FactorizedDiTBlock(nn.Module):
         return x_lane, x_agent
     
 
+class FactorizedDiTBlockCond(nn.Module):
+    """
+    Sequence of factorized (a2l, l2l, l2a, a2a) DiT blocks.
+    """
+    def __init__(
+            self, 
+            hidden_dim, 
+            hidden_dim_agent, 
+            num_heads, 
+            num_heads_agent, 
+            dropout, 
+            mlp_ratio=4.0, 
+            num_l2l_blocks=1,
+            use_img_cross=True,
+            num_cross_attn = 1):
+        
+        super().__init__()
+        self.num_l2l_blocks = num_l2l_blocks
+        self.num_cross_attn = num_cross_attn
+        self.use_img_cross = use_img_cross
+
+        # l2l
+        # we stack several l2l blocks to give more capacity for lane modeling
+        self.l2l_blocks = []
+        for _ in range(num_l2l_blocks):
+            self.l2l_blocks.append(DiTBlock(hidden_dim, num_heads, dropout, mlp_ratio))
+        self.l2l_blocks = nn.ModuleList(self.l2l_blocks)
+
+        #a2a
+        self.a2a_block = DiTBlock(hidden_dim_agent, num_heads_agent, dropout, mlp_ratio)
+
+        # l2a
+        self.downsample_x_lane = nn.Linear(hidden_dim, hidden_dim_agent)
+        self.l2a_block = DiTBlock(hidden_dim_agent, num_heads_agent, dropout, mlp_ratio)
+        
+        # a2l
+        self.upsample_x_agent = nn.Linear(hidden_dim_agent, hidden_dim)
+        self.a2l_block = DiTBlock(hidden_dim, num_heads, dropout, mlp_ratio)
+        
+        # Cross-attention modules (optional)
+        if use_img_cross:
+            self.lane_img_attn_blocks = nn.ModuleList([
+                nn.MultiheadAttention(embed_dim=hidden_dim, num_heads=num_heads, dropout=dropout, batch_first=True)
+                for _ in range(num_cross_attn)
+            ])
+            self.agent_img_attn_blocks = nn.ModuleList([
+                nn.MultiheadAttention(embed_dim=hidden_dim_agent, num_heads=num_heads_agent, dropout=dropout, batch_first=True)
+                for _ in range(num_cross_attn)
+            ])
+            self.lane_img_ln_blocks = nn.ModuleList([nn.LayerNorm(hidden_dim) for _ in range(num_cross_attn)])
+            self.agent_img_ln_blocks = nn.ModuleList([nn.LayerNorm(hidden_dim_agent) for _ in range(num_cross_attn)])
+            self.cross_dropout_blocks = nn.ModuleList([nn.Dropout(dropout) for _ in range(num_cross_attn)])
+
+    def _cross_attend_per_scene(self, q, q_batch, kv, attn, ln, dropout):
+        """
+        Per-scene cross-attention loop.
+        q: (N_q, D_q)  flattened tokens (lanes or agents)
+        q_batch: (N_q,)  scene id for each q token (0..B-1)
+        kv: (B, L, D_kv)  BEV tokens per scene, D_kv == D_q
+        attn: nn.MultiheadAttention (batch_first=True)
+        ln: LayerNorm
+        dropout: dropout layer
+        returns: (N_q, D_q)
+        """
+        device = q.device
+        out = torch.empty_like(q, device=device)
+        scene_ids = torch.unique(q_batch)
+        # Process each scene separately to avoid tokens attending to other scenes' BEV
+        for sid in scene_ids:
+            sid_int = int(sid.item())
+            idx = (q_batch == sid).nonzero(as_tuple=True)[0]
+            if idx.numel() == 0:
+                continue
+            q_s = q[idx]                   # (n_s, D)
+            # attn expects (B, Lq, D) with batch_first=True
+            q_s_b = q_s.unsqueeze(0)       # (1, n_s, D)
+            kv_s = kv[sid_int].unsqueeze(0)  # (1, L, D)
+            attn_out, _ = attn(q_s_b, kv_s, kv_s)  # (1, n_s, D)
+            attn_out = attn_out.squeeze(0)         # (n_s, D)
+            out[idx] = ln(q_s + dropout(attn_out))
+        return out
+    
+    def forward(
+            self, 
+            x_lane, 
+            x_agent, 
+            c, 
+            c_small, 
+            l2l_edge_index, 
+            a2a_edge_index, 
+            l2a_edge_index,
+            img_kv=None,
+            img_kv_agent=None,
+            lane_batch=None,
+            agent_batch=None):
+        
+        # a2l
+        x_lane_agent = torch.cat([x_lane, self.upsample_x_agent(x_agent)], dim=0)
+        x_lane_agent = self.a2l_block(x_lane_agent, c, l2a_edge_index[[1, 0], :])
+        x_lane = x_lane_agent[:x_lane.shape[0]]
+        
+        # l2l
+        for i in range(self.num_l2l_blocks):
+            for i in range(self.num_cross_attn):
+                x_lane = self.l2l_blocks[i](x_lane, c[:x_lane.shape[0]], l2l_edge_index)
+        
+        # lane <--- image cross-attn
+        if self.use_img_cross and img_kv is not None and lane_batch is not None:
+            for i in range(self.num_cross_attn):
+                x_lane = self._cross_attend_per_scene(
+                    x_lane, lane_batch, img_kv,
+                    self.lane_img_attn_blocks[i],
+                    self.lane_img_ln_blocks[i],
+                    self.cross_dropout_blocks[i]
+                )
+        # l2a
+        x_lane_agent = torch.cat([self.downsample_x_lane(x_lane), x_agent], dim=0)
+        x_lane_agent = self.l2a_block(x_lane_agent, c_small, l2a_edge_index)
+        x_agent = x_lane_agent[x_lane.shape[0]:]
+        
+        # agent <--- image cross-attn
+        if self.use_img_cross and img_kv_agent is not None and agent_batch is not None:
+            for i in range(self.num_cross_attn):
+                x_agent = self._cross_attend_per_scene(
+                    x_agent, agent_batch, img_kv_agent,
+                    self.agent_img_attn_blocks[i],
+                    self.agent_img_ln_blocks[i],
+                    self.cross_dropout_blocks[i]
+                )
+
+        # a2a
+        x_agent = self.a2a_block(x_agent, c_small[x_lane.shape[0]:], a2a_edge_index)
+        
+        return x_lane, x_agent
+    
+
 class FinalLayer(nn.Module):
     """
     The final layer of DiT.
@@ -358,4 +494,31 @@ class TwoLayerResMLP(nn.Module):
         
         out  = out + x
         out = self.relu(out)
+        return out
+    
+
+class ImageCrossAttention(nn.Module):
+    def __init__(self, query_dim, kv_dim, num_heads, dropout=0.0):
+        super().__init__()
+        # We'll project kv to query_dim so MultiheadAttention uses same embed dim.
+        self.kv_proj = nn.Linear(kv_dim, query_dim) if kv_dim != query_dim else nn.Identity()
+        self.attn = nn.MultiheadAttention(embed_dim=query_dim, num_heads=num_heads, dropout=dropout, batch_first=True)
+        self.drop = nn.Dropout(dropout)
+        self.norm = nn.LayerNorm(query_dim)
+
+    def forward(self, q, kv, attn_mask=None):
+        """
+        q: (N_q, D_q)  or (B_q, L_q, D_q) if batched
+        kv: (N_kv, D_kv) or (B_kv, L_kv, D_kv)
+        We'll assume both are flattened along batch (like your current lane/agent handling).
+        """
+        # MultiheadAttention with batch_first expects (B, L, D). 
+        # In your code you often use concatenated tokens across batch; keep that behavior:
+        # q: (L_q, D) where L_q = total_lane_tokens; we will unsqueeze batch dim=1
+        # But it's simpler to call attn with q.unsqueeze(1) etc. Here I'll keep it simple:
+        q_batched = q.unsqueeze(1)          # (L_q, 1, D)
+        kv_proj = self.kv_proj(kv).unsqueeze(1)  # (L_kv, 1, D)
+        attn_out, _ = self.attn(q_batched, kv_proj, kv_proj, key_padding_mask=None, attn_mask=attn_mask)
+        attn_out = attn_out.squeeze(1)      # (L_q, D)
+        out = self.norm(q + self.drop(attn_out))
         return out

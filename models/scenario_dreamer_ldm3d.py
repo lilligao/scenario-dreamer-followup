@@ -377,9 +377,20 @@ class ScenarioDreamerLDM3D(pl.LightningModule):
         whitelist_weight_modules = (nn.Linear, nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.MultiheadAttention, nn.LSTM,
                                     nn.LSTMCell, nn.GRU, nn.GRUCell)
         blacklist_weight_modules = (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d, nn.LayerNorm, nn.Embedding)
+        
+        # freeze img_encoder
+        frozen_prefixes = set()
+        if hasattr(self.diff_model, 'img_encoder'):
+            for name, param in self.diff_model.img_encoder.named_parameters():
+                param.requires_grad = False
+            # remove img_encoder params from optimization
+            frozen_prefixes = set([f"img_encoder.{name}" for name, _ in self.diff_model.img_encoder.named_parameters()])
+            
         for module_name, module in self.diff_model.named_modules():
             for param_name, param in module.named_parameters():
                 full_param_name = '%s.%s' % (module_name, param_name) if module_name else param_name
+                if full_param_name in frozen_prefixes:
+                    continue  # skip frozen layers
                 if 'bias' in param_name:
                     no_decay.add(full_param_name)
                 elif 'weight' in param_name:
@@ -392,10 +403,11 @@ class ScenarioDreamerLDM3D(pl.LightningModule):
         
         # only optimize the diffusion model
         param_dict = {param_name: param for param_name, param in self.diff_model.named_parameters()}
+
         inter_params = decay & no_decay
         union_params = decay | no_decay
         assert len(inter_params) == 0
-        assert len(param_dict.keys() - union_params) == 0
+        assert len(param_dict.keys() - union_params - frozen_prefixes) == 0
 
         optim_groups = [
             {"params": [param_dict[param_name] for param_name in sorted(list(decay))],

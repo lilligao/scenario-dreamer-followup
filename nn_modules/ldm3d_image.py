@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 from hydra.utils import instantiate
+import os
 
 from utils.viz import visualize_multi_images_and_bev
 from utils.diffusion_helpers import (
@@ -88,11 +89,11 @@ class LDM3DCond(nn.Module):
         return posterior_mean, posterior_log_variance_clipped
 
     
-    def p_mean_variance(self, x_agent, x_lane, data, t_agent, t_lane):
+    def p_mean_variance(self, x_agent, x_lane, data, t_agent, t_lane, img_feats=None):
         """ Predict the mean and log variance of the posterior distribution p(x_{t-1} | x_t, x_0)."""
         # noise prediction
-        conditional_epsilon_agent, conditional_epsilon_lane = self.model(x_agent, x_lane, data, t_agent, t_lane, unconditional=False)
-        unconditional_epsilon_agent, unconditional_epsilon_lane = self.model(x_agent, x_lane, data, t_agent, t_lane, unconditional=True)
+        conditional_epsilon_agent, conditional_epsilon_lane = self.model(x_agent, x_lane, data, t_agent, t_lane, img_feats, unconditional=False)
+        unconditional_epsilon_agent, unconditional_epsilon_lane = self.model(x_agent, x_lane, data, t_agent, t_lane, img_feats, unconditional=True)
         # classifier-free guidance
         epsilon_agent = unconditional_epsilon_agent + self.cfg.train.guidance_scale * (conditional_epsilon_agent - unconditional_epsilon_agent)
         epsilon_lane = unconditional_epsilon_lane + self.cfg.train.guidance_scale * (conditional_epsilon_lane - unconditional_epsilon_lane)
@@ -112,7 +113,7 @@ class LDM3DCond(nn.Module):
 
     
     @torch.no_grad()
-    def p_sample(self, x_agent, x_lane, data, t_agent, t_lane):
+    def p_sample(self, x_agent, x_lane, data, t_agent, t_lane, img_feats=None):
         """ Sample from the posterior distribution p(x_{t-1} | x_t, x_0)."""
         b_agent = t_agent.shape[0]
         b_lane = t_lane.shape[0]
@@ -122,7 +123,8 @@ class LDM3DCond(nn.Module):
             x_lane, 
             data, 
             t_agent, 
-            t_lane)
+            t_lane,
+            img_feats)
         
         noise_agent = torch.randn_like(x_agent)
         noise_lane = torch.randn_like(x_lane)
@@ -160,6 +162,19 @@ class LDM3DCond(nn.Module):
         else:
             x_lane = torch.randn(lane_shape, device=device) * self.lane_sampling_temperature
 
+        # images for image conditioning
+        if self.image_conditioning:
+            B, N =  data.batch_size, 8 # TODO: overwrite number of camera from config
+            dtype = torch.float32
+            data_image = {
+                'image': data['cam_img_stack'].view(B, N, *data['cam_img_stack'].shape[1:]).to(dtype),
+                'intrinsics': data['intrinsics_stack'].view(B, N, *data['intrinsics_stack'].shape[1:]).to(dtype),
+                'extrinsics': data['T_cam_tf_inv_stack'].view(B, N, *data['T_cam_tf_inv_stack'].shape[1:]).to(dtype)
+            }
+            #bev_feats = self.img_encoder(data_image)
+            #img_feats = bev_feats['bev']
+            img_feats = self.img_encoder.encoder(data_image)
+
         # for sample visualizations during training, we can condition on the noiseless latents
         # before the partition to visualize inpainting performance.
         if mode == 'train':
@@ -177,7 +192,10 @@ class LDM3DCond(nn.Module):
             t_agent = timesteps[agent_batch]
             t_lane = timesteps[lane_batch]
             
-            x_agent, x_lane = self.p_sample(x_agent, x_lane, data, t_agent, t_lane)
+            if self.image_conditioning:
+                x_agent, x_lane = self.p_sample(x_agent, x_lane, data, t_agent, t_lane, img_feats)
+            else:
+                x_agent, x_lane = self.p_sample(x_agent, x_lane, data, t_agent, t_lane)
 
             x_agent = torch.clip(x_agent, -self.cfg_model.diffusion_clip, self.cfg_model.diffusion_clip)
             if mode == 'lane_conditioned':
@@ -233,8 +251,7 @@ class LDM3DCond(nn.Module):
             data, 
             t_agent, 
             t_lane,
-            img_feats=None,
-            cam_infos=None):
+            img_feats=None):
         """ Compute the loss for the diffusion model."""
         
         # generate noised latents for training
@@ -249,7 +266,7 @@ class LDM3DCond(nn.Module):
         lane_mask = data['lane'].partition_mask == BEFORE_PARTITION
         x_lane_noisy[lane_mask] = x_lane[lane_mask]
         
-        agent_noise_pred, lane_noise_pred = self.model(x_agent_noisy, x_lane_noisy, data, t_agent, t_lane, img_feats, cam_infos, unconditional=False)
+        agent_noise_pred, lane_noise_pred = self.model(x_agent_noisy, x_lane_noisy, data, t_agent, t_lane, img_feats, unconditional=False)
 
         assert agent_noise.shape == agent_noise_pred.shape
         assert lane_noise.shape == lane_noise_pred.shape
@@ -279,8 +296,8 @@ class LDM3DCond(nn.Module):
         batch_size = data.batch_size
 
         # images for image conditioning
+        img_feats = None
         if self.image_conditioning:
-            cam_infos = data['cam_infos']
             B, N =  data.batch_size, 8 # TODO: overwrite number of camera from config
             dtype = torch.float32
             data_image = {
@@ -288,14 +305,15 @@ class LDM3DCond(nn.Module):
                 'intrinsics': data['intrinsics_stack'].view(B, N, *data['intrinsics_stack'].shape[1:]).to(dtype),
                 'extrinsics': data['T_cam_tf_inv_stack'].view(B, N, *data['T_cam_tf_inv_stack'].shape[1:]).to(dtype)
             }
-            bev_feats = self.img_encoder(data_image)
+            #bev_feats = self.img_encoder(data_image)
+            #img_feats = bev_feats['bev']
+            img_feats = self.img_encoder.encoder(data_image)
             ### DEBUG
-            # visualize_multi_images_and_bev(data_image, bev_feats, idx=0, save_path="multi_cam_bev_center.png")
-            img_feats = bev_feats['bev']
-            
-        else:
-            img_feats = None
-            cam_infos = None
+            if self.cfg.train.debug_vis:
+                save_path = os.path.join(self.cfg.train.viz_dir, "bev_features")
+                img_feats_final = self.img_encoder(data_image)
+                for idx in range(B):
+                    visualize_multi_images_and_bev(data_image, img_feats_final, idx=idx, save_path=save_path, suffix=data['idx'][idx].item())
 
         # batch of random timesteps        
         t = torch.randint(0, self.n_timesteps, (batch_size,), device=x_agent.device).long()
@@ -303,7 +321,7 @@ class LDM3DCond(nn.Module):
         t_lane = t[lane_batch]
         
         
-        loss, agent_loss, lane_loss = self.p_losses(x_agent, x_lane, data, t_agent, t_lane, img_feats, cam_infos)
+        loss, agent_loss, lane_loss = self.p_losses(x_agent, x_lane, data, t_agent, t_lane, img_feats)
         
         loss_dict = {
             'loss': loss.mean(),

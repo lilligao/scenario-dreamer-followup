@@ -13,6 +13,7 @@ limit_train_batches: 1.0 # proportion of training batches used (reduce for easie
 limit_val_batches: 1.0 # proportion of validation batches used (reduce for easier debugging)
 num_samples_to_visualize: null # number of samples to visualize in each epoch of training
 viz_dir: null # directory to save visualizations
+debug_vis: False
 
 ### optimizer configurations
 max_steps: null # number of training steps
