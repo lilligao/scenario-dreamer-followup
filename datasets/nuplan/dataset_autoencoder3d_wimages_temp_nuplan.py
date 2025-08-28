@@ -8,6 +8,7 @@ import copy
 import gzip
 from tqdm import tqdm
 from typing import Any, Dict
+import warnings
 
 from torch_geometric.data import Dataset
 torch.set_printoptions(threshold=100000)
@@ -64,9 +65,8 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
             # For preprocessed data, still look for individual files
             self.files = sorted(glob.glob(self.preprocessed_dir + "/*.pkl"))
 
-        if self.load_images:
-            self.image_root = f"{self.cfg.nuplan_data_root}/sensor_blobs"  # this should be the base path before filename_jpg
-            self.cam_order = ['CAM_F0', 'CAM_L0', 'CAM_R0', 'CAM_L1', 'CAM_R1', 'CAM_L2', 'CAM_R2', 'CAM_B0']
+        self.image_root = f"{self.cfg.nuplan_data_root}/sensor_blobs"  # this should be the base path before filename_jpg
+        self.cam_order = ['CAM_F0', 'CAM_L0', 'CAM_R0', 'CAM_L1', 'CAM_R1', 'CAM_L2', 'CAM_R2', 'CAM_B0']
 
         self.dset_len = len(self.files)
 
@@ -594,16 +594,20 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
                 data['static_objects'])
 
             cam_infos = data['cam_infos']
+            
+            valid = True
             if self.load_images:
-                if len(cam_infos) != 8:
-                    raise ValueError(f"Expected 8 cameras, but got {len(cam_infos)}. Please check the data extraction script.")
+                if not all(cam in cam_infos for cam in self.cam_order) or len(cam_infos) != 8:
+                    valid = False
+                    warnings.warn(f"Skipping sequence {sequence_id} for {raw_file_name} due to missing camera information. With length {len(cam_infos)} and keys {cam_infos.keys()}")
 
-                cam_img_stack, T_cam_tf_stack, T_cam_tf_inv_stack, T_cam_ego_inv_stack, intrinsics_stack, widths, heights  = load_cam_views(
-                    cam_infos=cam_infos,
-                    cam_order=self.cam_order,
-                    image_root=self.image_root,
-                    do_undistortion=False
-                )
+                if self.cfg.debug_vis:
+                    cam_img_stack, T_cam_tf_stack, T_cam_tf_inv_stack, T_cam_ego_inv_stack, intrinsics_stack, widths, heights  = load_cam_views(
+                        cam_infos=cam_infos,
+                        cam_order=self.cam_order,
+                        image_root=self.image_root,
+                        do_undistortion=False
+                    )
 
                 # for debugging
                 #cam_img_stack = 0
@@ -780,8 +784,9 @@ class NuplanDatasetAutoEncoder3DTemp(Dataset):
                 to_pickle['cam_info'] = cam_infos
                 to_pickle['ego_state_og'] = ego_state_og # [ego_translation, ego_rotation, ego_dim, ego_heading]
                 # save preprocessed file
-                with open(os.path.join(self.preprocessed_dir, f'{sequence_id}_{raw_file_name}_{to_pickle["lg_type"]}.pkl'), 'wb') as f:
-                    pickle.dump(to_pickle, f, protocol=pickle.HIGHEST_PROTOCOL)
+                if valid:
+                    with open(os.path.join(self.preprocessed_dir, f'{sequence_id}_{raw_file_name}_{to_pickle["lg_type"]}.pkl'), 'wb') as f:
+                        pickle.dump(to_pickle, f, protocol=pickle.HIGHEST_PROTOCOL)
 
                 if lg_type == 'regular':
                     normalize_statistics['num_agents'] = num_agents

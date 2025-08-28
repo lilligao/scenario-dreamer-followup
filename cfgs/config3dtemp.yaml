@@ -29,10 +29,10 @@ preprocess_waymo:
   chunk_size: 50000 # size of each chunk to process in parallel processes, if chunk_idx >= 0
 
 preprocess_nuplan:
-  num_workers: 10 # number of workers to use for preprocessing the dataset
+  num_workers: 20 # number of workers to use for preprocessing the dataset
   mode: train # or val or test
   chunk_idx: -1 # If chunk_idx >= 0, indexes into the chunk_idx'th chunk of size chunk_size. If chunk_idx=-1, process all chunks in parallel processes
-  chunk_size: 50000 # size of each chunk to process in parallel processes, if chunk_idx >= 0
+  chunk_size: 50000 #0 # size of each chunk to process in parallel processes, if chunk_idx >= 0
 
 model_name: autoencoder # or ldm
 

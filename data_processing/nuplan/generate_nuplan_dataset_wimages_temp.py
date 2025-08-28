@@ -14,7 +14,9 @@ from tqdm import tqdm
 cam_order = ['CAM_F0', 'CAM_L0', 'CAM_R0', 'CAM_L1', 'CAM_R1', 'CAM_L2', 'CAM_R2', 'CAM_B0']
 image_root = "/data_nuplan/nuplan/dataset/nuplan-v1.1/sensor_blobs"
 sledge_preprocessed_data_folder = "autoencoder_cache_with_all_lili_temp"
-out_data_folder = "scenario_dreamer_nuplan_with_all_temp_min1cam"
+mode = "8cam" # "nofilter"
+out_data_folder = f"scenario_dreamer_nuplan_temp_{mode}"
+filter_cam = True # False
 
 
 def find_temporal_feature_paths(root_path, feature_name):  
@@ -82,6 +84,7 @@ def main(cfg):
     val_sequences = []  
     test_sequences = []  
     skip_count = 0
+    left_sequences = [] 
       
     for sequence_info in tqdm(sequence_paths):  
         log_name = sequence_info['log_name']  
@@ -96,7 +99,7 @@ def main(cfg):
         elif log_name in test_dirs:  
             split_list = test_sequences  
         else:  
-            continue  
+            split_list = left_sequences
           
         # Validate sequence by checking first frame  
         if frame_files:  
@@ -105,17 +108,22 @@ def main(cfg):
                     data = pickle.load(f)  
                   
                 # Check camera availability  
-                cam_infos = data.get('cam_infos', {})  
-                file_exists = []  
-                for key, value in cam_infos.items():  
-                    filename_jpg = value.get('filename_jpg', '')  
-                    file_exists.append(os.path.exists(os.path.join(image_root, filename_jpg)))  
-                  
-                if False in file_exists or len(cam_infos)!= 8:
-                    print(f"Skipping sequence {sequence_id} due to missing camera files or incorrect number of cameras.")
-                    skip_count += 1  
-                    continue  
-                  
+                if filter_cam:
+                    cam_infos = data.get('cam_infos', {})  
+                    file_exists = []  
+                    for key, value in cam_infos.items():  
+                        filename_jpg = value.get('filename_jpg', '')  
+                        file_exists.append(os.path.exists(os.path.join(image_root, filename_jpg)))  
+                    
+                    if False in file_exists or len(cam_infos)!= 8:
+                        print(f"Skipping sequence {sequence_id} due to missing camera files or incorrect number of cameras.")
+                        skip_count += 1  
+                        continue  
+                    if not all(cam in cam_infos for cam in cam_order):
+                        print(f"Skipping sequence {sequence_id} due to missing camera information.")
+                        skip_count += 1
+                        continue
+
                 split_list.append(sequence_info)  
                   
             except Exception as e:  
@@ -174,7 +182,7 @@ def main(cfg):
         'total_test_frames': sum(seq['num_frames'] for seq in test_sequences),  
     }  
     
-    with open(os.path.join(cfg.project_root, 'metadata', 'nuplan_temporal_min1cam_dataset.pkl'), 'wb') as f:  
+    with open(os.path.join(cfg.project_root, 'metadata', f'nuplan_temp_{mode}_dataset.pkl'), 'wb') as f:  
         pickle.dump(nuplan_dataset_dict, f)  
     
     print("Done.")
@@ -229,7 +237,7 @@ def main(cfg):
         'total_sequences': len(nuplan_test_sequences)  
     }  
     
-    with open(os.path.join(cfg.project_root, 'metadata', 'nuplan_temporal_min1cam_eval_set.pkl'), 'wb') as f:  
+    with open(os.path.join(cfg.project_root, 'metadata', f'nuplan_temp_{mode}_eval_set.pkl'), 'wb') as f:  
         pickle.dump(nuplan_test_dict, f)  
     
     print(f"Created evaluation set with {len(nuplan_test_sequences)} temporal sequences.")  

@@ -16,6 +16,6 @@ conditioning_path: null # optional path to conditioning data for lane-conditione
 metrics:
   samples_path: ${dataset_root}/checkpoints/${ldm.eval.run_name}/samples # path to load generated samples
   metrics_save_path: ${dataset_root}/checkpoints/${ldm.eval.run_name} # path to save metrics
-  eval_set: ${project_root}/metadata/nuplan_eval_set.pkl # pickle containing paths to ground-truth samples for metrics computation
+  eval_set: ${project_root}/metadata/nuplan_temp_8cam_eval_set.pkl # pickle containing paths to ground-truth samples for metrics computation
   gt_agent_test_dir: ${dataset_root}/scenario_dreamer_ae_preprocess_nuplan_3d_8cam_temp_wego/test # directory containing ground-truth agent data for metrics computation
   gt_lane_test_dir: ${dataset_root}/scenario_dreamer_nuplan_with_all_temp_8cam//sledge_raw/test # directory containing ground-truth lane data for metrics computation

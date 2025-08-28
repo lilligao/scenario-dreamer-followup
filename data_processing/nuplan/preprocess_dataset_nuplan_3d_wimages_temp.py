@@ -45,14 +45,24 @@ def main(cfg):
         return
 
     # case 2 — chunk_idx == -1  ⇒  run *all* chunks in parallel
-    if cfg.preprocess_nuplan.mode == 'train':
-        total_chunks = 10
+    total_chunks = 20
+    # TODO: Get chunk size automatically
+    if cfg.ae.dataset.load_images:
+        if cfg.preprocess_nuplan.mode == 'train':
+            cfg.preprocess_nuplan.chunk_size = 25000
+        if cfg.preprocess_nuplan.mode == 'val':
+            cfg.preprocess_nuplan.chunk_size = 7500
+        if cfg.preprocess_nuplan.mode == 'test':
+            cfg.preprocess_nuplan.chunk_size = 7500
     else:
-        total_chunks = 1
-    
-    if cfg.preprocess_nuplan.mode == 'test':
-        cfg.preprocess_nuplan.chunk_size = 67000
-        
+        if cfg.preprocess_nuplan.mode == 'train':
+            cfg.preprocess_nuplan.chunk_size = 250000
+        if cfg.preprocess_nuplan.mode == 'val':
+            cfg.preprocess_nuplan.chunk_size = 20000
+        if cfg.preprocess_nuplan.mode == 'test':
+            cfg.preprocess_nuplan.chunk_size = 50000
+
+    print(f"chunk size: {cfg.preprocess_nuplan.chunk_size}")
 
     n_workers = min(
         cfg.preprocess_nuplan.get("num_workers", mp.cpu_count()),
