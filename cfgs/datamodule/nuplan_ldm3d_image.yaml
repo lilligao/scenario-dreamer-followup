@@ -3,6 +3,6 @@ defaults:
 
 _target_: datamodules.nuplan.nuplan_datamodule_ldm3d_image.NuplanDataModuleLDM3D
 
-train_batch_size: 2 # TODO: 2 for debugging, 256 for original, but it's impossible to load so many images
-val_batch_size: 2 # TODO: 2 for debugging, 256 for original
+train_batch_size: 2 # TODO: 2 for debugging, only 2 and 3 supported for GKT
+val_batch_size: 2 # TODO: 2 for debugging, only 2 and 3 supported for GKT
 dataset_cfg: null
